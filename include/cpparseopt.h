@@ -24,49 +24,54 @@ namespace cpparseopt {
     typedef std::string str_t;
 
 
-    class Param {
-    protected:
+    class ParamGeneric {
         str_t name_;
-        str_t val_;
-        str_t default_;
         str_t descr_;
-        bool hasVal_;
-        bool hasDefault_;
 
     public:
-        Param(const str_t &name = "");
-
-        void setVal(const str_t &val);
-        bool hasVal() const;
-
-        virtual const str_t &getDefault() const;
-        bool hasDefault() const;
-        void setDefault(const str_t &val);
+        ParamGeneric(const str_t &name = "");
 
         const str_t &getDescr() const;
         void setDescr(const str_t &descr);
     };
 
 
-    class Argument: public Param {
+    class ParamAliased {
+        std::vector<str_t> aliases_;
+    public:
+        void addAlias(const str_t &name);
+    };
+
+
+    class ParamValued {
+        str_t val_;
+        str_t default_;
+        bool hasVal_;
+        bool hasDefault_;
+
+    public:
+        ParamValued();
+
+        void setVal(const str_t &val);
+        bool hasVal() const;
+
+        const str_t &getDefault() const;
+        bool hasDefault() const;
+        void setDefault(const str_t &val);
+    };
+
+
+    class Argument: public ParamGeneric, public ParamValued {
         size_t pos_;
     public:
         Argument(size_t pos, const str_t &name = "");
-        const str_t &getDefault() const;
         size_t getPos() const;
     };
 
     typedef std::vector<Argument> Arguments;
 
 
-    class AliasedParam: public Param {
-        std::vector<str_t> aliases_;
-    public:
-        AliasedParam(const str_t &name);
-        void addAlias(const str_t &name);
-    };
-
-    class Flag: public AliasedParam {
+    class Flag: public ParamGeneric, public ParamAliased {
     public:
         Flag(const str_t &name);
     };
@@ -74,7 +79,7 @@ namespace cpparseopt {
     typedef std::vector<Flag> Flags;
 
 
-    class Option: public AliasedParam {
+    class Option: public ParamGeneric, public ParamAliased, public ParamValued {
     public:
         Option(const str_t &name);
     };
@@ -82,13 +87,7 @@ namespace cpparseopt {
     typedef std::vector<Option> Options;
 
 
-    // Forward declarations
     class Builder;
-    class ArgBuilder;
-    class ArgDescrBuilder;
-    class ArgValueBuilder;
-    class FlagBuilder;
-    class OptBuilder;
 
     class Pattern {
         friend class Builder;
@@ -106,6 +105,10 @@ namespace cpparseopt {
     };
 
 
+    class ArgBuilder;
+    class FlagBuilder;
+    class OptBuilder;
+
     class Builder {
     protected:
         Pattern &pattern_;
@@ -116,6 +119,9 @@ namespace cpparseopt {
         OptBuilder  opt(const str_t &name);
     };
 
+
+    class ArgDescrBuilder;
+    class ArgValueBuilder;
 
     class ArgBuilder: public Builder {
         Argument &arg_;
@@ -140,12 +146,21 @@ namespace cpparseopt {
     };
 
 
+    class FlagAliasBuilder;
+
     class FlagBuilder: public Builder {
         Flag &flag_;
     public:
         FlagBuilder(Flag &flag, Pattern &pattern);
-        ArgValueBuilder alias(const str_t &name);
-        ArgValueBuilder descr(const str_t &descr);
+        FlagBuilder alias(const str_t &name);
+        FlagAliasBuilder descr(const str_t &descr);
+    };
+
+    class FlagAliasBuilder: public Builder {
+        Flag &flag_;
+    public:
+        FlagAliasBuilder(Flag &flag, Pattern &pattern);
+        FlagAliasBuilder alias(const str_t &name);
     };
 
 

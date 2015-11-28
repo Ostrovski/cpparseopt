@@ -13,6 +13,8 @@ int main() {
             .arg("arg4").defaultVal("default4").descr("descr4")
             .arg("arg5").descr("descr5").defaultVal("default5")
             .arg()
+            .flag("-f").descr("descr1").alias("--foo").alias("--foobar")
+            .flag("-F").alias("--foo").descr("descr2").alias("--FOO")
             .opt("-b")/*.alias("--baz").alias("--bazar").descr("And here we go!")*/;
 
     std::cout << pattern.usage() << std::endl;

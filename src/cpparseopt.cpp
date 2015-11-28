@@ -4,50 +4,57 @@
 using namespace cpparseopt;
 
 
-Param::Param(const str_t &name)
-        : name_(name), hasVal_(false), hasDefault_(false) {
+ParamGeneric::ParamGeneric(const str_t &name)
+        : name_(name) {
 
 }
 
-void Param::setVal(const str_t &val) {
-    val_ = val;
-    hasVal_ = true;
-}
-
-bool Param::hasVal() const {
-    return hasVal_;
-}
-
-const str_t &Param::getDefault() const {
-    return default_;
-}
-
-bool Param::hasDefault() const {
-    return hasDefault_;
-}
-
-void Param::setDefault(const str_t &val) {
-    default_ = val;
-    hasDefault_ = true;
-}
-
-const str_t &Param::getDescr() const {
+const str_t &ParamGeneric::getDescr() const {
     return descr_;
 }
 
-void Param::setDescr(const str_t &descr) {
+void ParamGeneric::setDescr(const str_t &descr) {
     descr_ = descr;
 }
 
 
-Argument::Argument(size_t pos, const str_t &name)
-        : Param(name), pos_(pos) {
+void ParamAliased::addAlias(const str_t &name) {
+    aliases_.push_back(name);
+}
+
+
+ParamValued::ParamValued()
+        : hasDefault_(false), hasVal_(false) {
 
 }
 
-const str_t &Argument::getDefault() const {
+void ParamValued::setVal(const str_t &val) {
+    val_ = val;
+    hasVal_ = true;
+}
+
+bool ParamValued::hasVal() const {
+    return hasVal_;
+}
+
+const str_t &ParamValued::getDefault() const {
     assert(hasDefault());
     return default_;
+}
+
+bool ParamValued::hasDefault() const {
+    return hasDefault_;
+}
+
+void ParamValued::setDefault(const str_t &val) {
+    default_ = val;
+    hasDefault_ = true;
+}
+
+
+Argument::Argument(size_t pos, const str_t &name)
+        : ParamGeneric(name), pos_(pos) {
+
 }
 
 size_t Argument::getPos() const {
@@ -55,23 +62,14 @@ size_t Argument::getPos() const {
 }
 
 
-AliasedParam::AliasedParam(const str_t &name)
-        : Param(name) {
-}
-
-void AliasedParam::addAlias(const str_t &name) {
-    aliases_.push_back(name);
-}
-
-
 Flag::Flag(const str_t &name)
-        : AliasedParam(name) {
+        : ParamGeneric(name) {
 
 }
 
 
 Option::Option(const str_t &name)
-        : AliasedParam(name) {
+        : ParamGeneric(name) {
 
 }
 
@@ -155,6 +153,27 @@ Builder ArgValueBuilder::defaultVal(const str_t &val) {
 FlagBuilder::FlagBuilder(Flag &flag, Pattern &pattern)
         : Builder(pattern), flag_(flag) {
 
+}
+
+FlagBuilder FlagBuilder::alias(const str_t &name) {
+    flag_.addAlias(name);
+    return FlagBuilder(flag_, pattern_);
+}
+
+
+FlagAliasBuilder::FlagAliasBuilder(Flag &flag, Pattern &pattern)
+        : Builder(pattern), flag_(flag) {
+
+}
+
+FlagAliasBuilder FlagBuilder::descr(const str_t &descr) {
+    flag_.setDescr(descr);
+    return FlagAliasBuilder(flag_, pattern_);
+}
+
+FlagAliasBuilder FlagAliasBuilder::alias(const str_t &name) {
+    flag_.addAlias(name);
+    return FlagAliasBuilder(flag_, pattern_);
 }
 
 
