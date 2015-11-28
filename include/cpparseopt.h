@@ -83,22 +83,20 @@ namespace cpparseopt {
 
 
     // Forward declarations
-    class Nexus;
-    class ArgNexus;
-    class ArgDescrNexus;
-    class ArgValueNexus;
-    class FlagNexus;
-    class OptNexus;
+    class Builder;
+    class ArgBuilder;
+    class ArgDescrBuilder;
+    class ArgValueBuilder;
+    class FlagBuilder;
+    class OptBuilder;
 
     class Pattern {
-        friend class Nexus;
+        friend class Builder;
 
         Arguments arguments_;
         Flags flags_;
         Options options_;
     public:
-        static Nexus chain(Pattern &pattern);
-
         str_t usage();
 
     private:
@@ -108,53 +106,53 @@ namespace cpparseopt {
     };
 
 
-    class Nexus {
+    class Builder {
     protected:
         Pattern &pattern_;
     public:
-        Nexus(Pattern &pattern);
-        ArgNexus  arg(const str_t &name = "");
-        FlagNexus flag(const str_t &name);
-        OptNexus  opt(const str_t &name);
+        Builder(Pattern &pattern);
+        ArgBuilder  arg(const str_t &name = "");
+        FlagBuilder flag(const str_t &name);
+        OptBuilder  opt(const str_t &name);
     };
 
 
-    class ArgNexus: public Nexus {
+    class ArgBuilder: public Builder {
         Argument &arg_;
     public:
-        ArgNexus(Argument &arg, Pattern &pattern);
-        ArgDescrNexus defaultVal(const str_t &val);
-        ArgValueNexus descr(const str_t &descr);
+        ArgBuilder(Argument &arg, Pattern &pattern);
+        ArgDescrBuilder defaultVal(const str_t &val);
+        ArgValueBuilder descr(const str_t &descr);
     };
 
-    class ArgDescrNexus: public Nexus {
+    class ArgDescrBuilder: public Builder {
         Argument &arg_;
     public:
-        ArgDescrNexus(Argument &arg, Pattern &pattern);
-        Nexus descr(const str_t &descr);
+        ArgDescrBuilder(Argument &arg, Pattern &pattern);
+        Builder descr(const str_t &descr);
     };
 
-    class ArgValueNexus: public Nexus {
+    class ArgValueBuilder: public Builder {
         Argument &arg_;
     public:
-        ArgValueNexus(Argument &arg, Pattern &pattern);
-        Nexus defaultVal(const str_t &val);
+        ArgValueBuilder(Argument &arg, Pattern &pattern);
+        Builder defaultVal(const str_t &val);
     };
 
 
-    class FlagNexus: public Nexus {
+    class FlagBuilder: public Builder {
         Flag &flag_;
     public:
-        FlagNexus(Flag &flag, Pattern &pattern);
-        ArgValueNexus alias(const str_t &name);
-        ArgValueNexus descr(const str_t &descr);
+        FlagBuilder(Flag &flag, Pattern &pattern);
+        ArgValueBuilder alias(const str_t &name);
+        ArgValueBuilder descr(const str_t &descr);
     };
 
 
-    class OptNexus: public Nexus {
+    class OptBuilder: public Builder {
         Option &option_;
     public:
-        OptNexus(Option &option, Pattern &pattern);
+        OptBuilder(Option &option, Pattern &pattern);
     };
 }
 

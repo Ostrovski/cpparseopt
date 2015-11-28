@@ -5,7 +5,7 @@ using namespace cpparseopt;
 
 
 Param::Param(const str_t &name)
-        : name_(name), hasDefault_(false) {
+        : name_(name), hasVal_(false), hasDefault_(false) {
 
 }
 
@@ -76,10 +76,6 @@ Option::Option(const str_t &name)
 }
 
 
-Nexus Pattern::chain(Pattern &pattern) {
-    return Nexus(pattern);
-}
-
 str_t Pattern::usage() {
     return "Usage here";
 }
@@ -100,69 +96,69 @@ Option &Pattern::addOpt(const str_t &name) {
 }
 
 
-Nexus::Nexus(Pattern &pattern)
+Builder::Builder(Pattern &pattern)
         : pattern_(pattern) {
 
 }
 
-ArgNexus Nexus::arg(const str_t &name) {
-    return ArgNexus(pattern_.addArg(name), pattern_);
+ArgBuilder Builder::arg(const str_t &name) {
+    return ArgBuilder(pattern_.addArg(name), pattern_);
 }
 
-FlagNexus Nexus::flag(const str_t &name) {
-    return FlagNexus(pattern_.addFlag(name), pattern_);
+FlagBuilder Builder::flag(const str_t &name) {
+    return FlagBuilder(pattern_.addFlag(name), pattern_);
 }
 
-OptNexus Nexus::opt(const str_t &name) {
-    return OptNexus(pattern_.addOpt(name), pattern_);
+OptBuilder Builder::opt(const str_t &name) {
+    return OptBuilder(pattern_.addOpt(name), pattern_);
 }
 
 
-ArgNexus::ArgNexus(Argument &arg, Pattern &pattern)
-        : Nexus(pattern), arg_(arg) {
+ArgBuilder::ArgBuilder(Argument &arg, Pattern &pattern)
+        : Builder(pattern), arg_(arg) {
 
 }
 
-ArgDescrNexus ArgNexus::defaultVal(const str_t &val) {
+ArgDescrBuilder ArgBuilder::defaultVal(const str_t &val) {
     arg_.setDefault(val);
-    return ArgDescrNexus(arg_, pattern_);
+    return ArgDescrBuilder(arg_, pattern_);
 }
 
-ArgValueNexus ArgNexus::descr(const str_t &descr) {
+ArgValueBuilder ArgBuilder::descr(const str_t &descr) {
     arg_.setDescr(descr);
-    return ArgValueNexus(arg_, pattern_);
+    return ArgValueBuilder(arg_, pattern_);
 }
 
 
-ArgDescrNexus::ArgDescrNexus(Argument &arg, Pattern &pattern)
-        : Nexus(pattern), arg_(arg) {
+ArgDescrBuilder::ArgDescrBuilder(Argument &arg, Pattern &pattern)
+        : Builder(pattern), arg_(arg) {
 
 }
 
-Nexus ArgDescrNexus::descr(const str_t &descr) {
+Builder ArgDescrBuilder::descr(const str_t &descr) {
     arg_.setDescr(descr);
-    return Nexus(pattern_);
+    return Builder(pattern_);
 }
 
 
-ArgValueNexus::ArgValueNexus(Argument &arg, Pattern &pattern)
-        : Nexus(pattern), arg_(arg) {
+ArgValueBuilder::ArgValueBuilder(Argument &arg, Pattern &pattern)
+        : Builder(pattern), arg_(arg) {
 
 }
 
-Nexus ArgValueNexus::defaultVal(const str_t &val) {
+Builder ArgValueBuilder::defaultVal(const str_t &val) {
     arg_.setDefault(val);
-    return Nexus(pattern_);
+    return Builder(pattern_);
 }
 
 
-FlagNexus::FlagNexus(Flag &flag, Pattern &pattern)
-        : Nexus(pattern), flag_(flag) {
+FlagBuilder::FlagBuilder(Flag &flag, Pattern &pattern)
+        : Builder(pattern), flag_(flag) {
 
 }
 
 
-OptNexus::OptNexus(Option &option, Pattern &pattern)
-        : Nexus(pattern), option_(option) {
+OptBuilder::OptBuilder(Option &option, Pattern &pattern)
+        : Builder(pattern), option_(option) {
 
 }
