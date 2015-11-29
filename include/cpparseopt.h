@@ -5,24 +5,7 @@
 #include <vector>
 
 namespace cpparseopt {
-    //    class ParseResult {
-    //    public:
-    //        std::string getArg   (const size_t pos);
-    //        int         getArgInt(const size_t pos);
-    //        bool        getFlag  (const std::string &flag);
-    //        std::string getOpt   (const std::string &opt);
-    //        int         getOptInt(const std::string &opt);
-    //    };
-
-    // Arg - pos, name, default val, description.
-    //       Default is used only if argument is not present.
-    // flag - name, [alias, [alias, ...]], description.
-    //        Default is always false, i.e. flag is not present.
-    // Opt - name, [alias, [alias, ...]], description.
-    //       Default is used only if the option is present.
-
     typedef std::string str_t;
-
 
     class ParamGeneric {
         str_t name_;
@@ -87,21 +70,43 @@ namespace cpparseopt {
     typedef std::vector<Option> Options;
 
 
+    class CmdLineParser;
     class PatternBuilder;
 
     class Pattern {
+        friend class CmdLineParser;
         friend class PatternBuilder;
 
         Arguments arguments_;
-        Flags flags_;
-        Options options_;
+        Flags     flags_;
+        Options   options_;
+
+        bool parsed_;
     public:
-        str_t usage();
+        Pattern();
+
+        void parse(int argc, char **argv);
+
+        // Next methods raise an exception in case of parsed_ == false;
+        // Also raise an exception in case of unknown param name/pos.
+        const Argument &getArg(size_t pos) const;
+        const Argument &getArg(const str_t &name) const;
+        const Option &getOpt(const str_t &name) const;
+        bool hasFlag() const;
+
+        str_t usage() const;
 
     private:
         Argument &addArg(const str_t &name);
         Flag     &addFlag(const str_t &name);
         Option   &addOpt(const str_t &name);
+        void     registerAlias(Flag &flag, const str_t &alias);
+        void     registerAlias(Option &option, const str_t &alias);
+
+        // Next methods raise an exception only in case of unknown name/pos.
+        // Argument &getArgRaw(size_t pos);
+        // Option &getOptRaw(const str_t &name);
+        // Flag &getFlagRaw(const str_t &name);
     };
 
 
@@ -110,13 +115,21 @@ namespace cpparseopt {
     class OptBuilder;
 
     class PatternBuilder {
+        // Important! All classes in the Builder's hierarchy must not
+        // contain any fields, except Pattern& and Param&.
+        // This fields must not be owned (i.e. must be references).
     protected:
         Pattern &pattern_;
+
     public:
         PatternBuilder(Pattern &pattern);
         ArgBuilder  arg(const str_t &name = "");
         FlagBuilder flag(const str_t &name);
         OptBuilder  opt(const str_t &name);
+
+    protected:
+        void registerAlias(Flag &flag, const str_t &alias);
+        void registerAlias(Option &option, const str_t &alias);
     };
 
 
@@ -151,7 +164,7 @@ namespace cpparseopt {
         T &param_;
     public:
         AliasBuilder(T &param, Pattern &pattern);
-        AliasBuilder<T> alias(const str_t &name);
+        AliasBuilder<T> alias(const str_t &alias);
     };
 
 
@@ -159,7 +172,7 @@ namespace cpparseopt {
         Flag &flag_;
     public:
         FlagBuilder(Flag &flag, Pattern &pattern);
-        FlagBuilder alias(const str_t &name);
+        FlagBuilder alias(const str_t &alias);
         AliasBuilder<Flag> descr(const str_t &descr);
     };
 
@@ -171,7 +184,7 @@ namespace cpparseopt {
         Option &option_;
     public:
         OptBuilder(Option &option, Pattern &pattern);
-        OptBuilder alias(const str_t &name);
+        OptBuilder alias(const str_t &alias);
         OptDescrBuilder defaultVal(const str_t &val);
         OptValueBuilder descr(const str_t &descr);
     };
@@ -188,6 +201,30 @@ namespace cpparseopt {
     public:
         OptValueBuilder(Option &option, Pattern &pattern);
         AliasBuilder<Option> defaultVal(const str_t &val);
+    };
+
+
+    class CmdLineParser {
+        // Arg - pos, name, default val, description.
+        //       Default is used only if argument is not present.
+        // flag - name, [alias, [alias, ...]], description.
+        //        Default is always false, i.e. flag is not present.
+        // Opt - name, [alias, [alias, ...]], description.
+        //       Default is used only if the option is present.
+
+        int argc_;
+        char **argv_;
+        int paramCounter_;
+        Pattern &pattern_;
+    public:
+        CmdLineParser(int argc, char **argv, Pattern &pattern);
+
+        void parse();
+        const char *getCurrentParam();
+        bool        hasNextParam();
+        void        nextParam();
+        bool isFlagParam();
+        bool isOptParam();
     };
 }
 
