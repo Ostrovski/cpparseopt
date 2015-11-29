@@ -150,6 +150,22 @@ Builder ArgValueBuilder::defaultVal(const str_t &val) {
 }
 
 
+template <typename T>
+AliasBuilder<T>::AliasBuilder(T &param, Pattern &pattern)
+        : Builder(pattern), param_(param) {
+
+}
+
+template <typename T>
+AliasBuilder<T> AliasBuilder<T>::alias(const str_t &name) {
+    param_.addAlias(name);
+    return AliasBuilder(param_, pattern_);
+}
+
+template class AliasBuilder<Flag>;
+template class AliasBuilder<Option>;
+
+
 FlagBuilder::FlagBuilder(Flag &flag, Pattern &pattern)
         : Builder(pattern), flag_(flag) {
 
@@ -161,23 +177,51 @@ FlagBuilder FlagBuilder::alias(const str_t &name) {
 }
 
 
-FlagAliasBuilder::FlagAliasBuilder(Flag &flag, Pattern &pattern)
-        : Builder(pattern), flag_(flag) {
-
-}
-
-FlagAliasBuilder FlagBuilder::descr(const str_t &descr) {
+AliasBuilder<Flag> FlagBuilder::descr(const str_t &descr) {
     flag_.setDescr(descr);
-    return FlagAliasBuilder(flag_, pattern_);
-}
-
-FlagAliasBuilder FlagAliasBuilder::alias(const str_t &name) {
-    flag_.addAlias(name);
-    return FlagAliasBuilder(flag_, pattern_);
+    return AliasBuilder<Flag>(flag_, pattern_);
 }
 
 
 OptBuilder::OptBuilder(Option &option, Pattern &pattern)
         : Builder(pattern), option_(option) {
 
+}
+
+OptBuilder OptBuilder::alias(const str_t &name) {
+    option_.addAlias(name);
+    return OptBuilder(option_, pattern_);
+}
+
+
+OptDescrBuilder OptBuilder::defaultVal(const str_t &val) {
+    option_.setDefault(val);
+    return OptDescrBuilder(option_, pattern_);
+}
+
+OptValueBuilder OptBuilder::descr(const str_t &descr) {
+    option_.setDescr(descr);
+    return OptValueBuilder(option_, pattern_);
+}
+
+
+OptDescrBuilder::OptDescrBuilder(Option &option, Pattern &pattern)
+        : Builder(pattern), option_(option) {
+
+}
+
+AliasBuilder<Option> OptDescrBuilder::descr(const str_t &descr) {
+    option_.setDescr(descr);
+    return AliasBuilder<Option>(option_, pattern_);
+}
+
+
+OptValueBuilder::OptValueBuilder(Option &option, Pattern &pattern)
+        : Builder(pattern), option_(option) {
+
+}
+
+AliasBuilder<Option> OptValueBuilder::defaultVal(const str_t &val) {
+    option_.setDefault(val);
+    return AliasBuilder<Option>(option_, pattern_);
 }

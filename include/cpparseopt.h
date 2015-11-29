@@ -146,28 +146,48 @@ namespace cpparseopt {
     };
 
 
-    class FlagAliasBuilder;
+    template <typename T>
+    class AliasBuilder: public Builder {
+        T &param_;
+    public:
+        AliasBuilder(T &param, Pattern &pattern);
+        AliasBuilder<T> alias(const str_t &name);
+    };
+
 
     class FlagBuilder: public Builder {
         Flag &flag_;
     public:
         FlagBuilder(Flag &flag, Pattern &pattern);
         FlagBuilder alias(const str_t &name);
-        FlagAliasBuilder descr(const str_t &descr);
+        AliasBuilder<Flag> descr(const str_t &descr);
     };
 
-    class FlagAliasBuilder: public Builder {
-        Flag &flag_;
-    public:
-        FlagAliasBuilder(Flag &flag, Pattern &pattern);
-        FlagAliasBuilder alias(const str_t &name);
-    };
 
+    class OptDescrBuilder;
+    class OptValueBuilder;
 
     class OptBuilder: public Builder {
         Option &option_;
     public:
         OptBuilder(Option &option, Pattern &pattern);
+        OptBuilder alias(const str_t &name);
+        OptDescrBuilder defaultVal(const str_t &val);
+        OptValueBuilder descr(const str_t &descr);
+    };
+
+    class OptDescrBuilder: public Builder {
+        Option &option_;
+    public:
+        OptDescrBuilder(Option &option, Pattern &pattern);
+        AliasBuilder<Option> descr(const str_t &descr);
+    };
+
+    class OptValueBuilder: public Builder {
+        Option &option_;
+    public:
+        OptValueBuilder(Option &option, Pattern &pattern);
+        AliasBuilder<Option> defaultVal(const str_t &val);
     };
 }
 
