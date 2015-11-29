@@ -150,13 +150,13 @@ PatternBuilder ArgValueBuilder::defaultVal(const str_t &val) {
 }
 
 
-template <typename T>
+template<typename T>
 AliasBuilder<T>::AliasBuilder(T &param, Pattern &pattern)
         : PatternBuilder(pattern), param_(param) {
 
 }
 
-template <typename T>
+template<typename T>
 AliasBuilder<T> AliasBuilder<T>::alias(const str_t &name) {
     param_.addAlias(name);
     return AliasBuilder(param_, pattern_);

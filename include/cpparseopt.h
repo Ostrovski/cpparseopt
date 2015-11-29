@@ -146,7 +146,7 @@ namespace cpparseopt {
     };
 
 
-    template <typename T>
+    template<typename T>
     class AliasBuilder: public PatternBuilder {
         T &param_;
     public:
