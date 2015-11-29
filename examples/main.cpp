@@ -6,7 +6,7 @@ using namespace cpparseopt;
 
 int main() {
     Pattern pattern;
-    Builder(pattern)
+    PatternBuilder(pattern)
             .arg("arg1")
             .arg("arg2").defaultVal("default2")
             .arg("arg3").descr("descr3")

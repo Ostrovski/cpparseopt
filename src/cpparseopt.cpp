@@ -94,26 +94,26 @@ Option &Pattern::addOpt(const str_t &name) {
 }
 
 
-Builder::Builder(Pattern &pattern)
+PatternBuilder::PatternBuilder(Pattern &pattern)
         : pattern_(pattern) {
 
 }
 
-ArgBuilder Builder::arg(const str_t &name) {
+ArgBuilder PatternBuilder::arg(const str_t &name) {
     return ArgBuilder(pattern_.addArg(name), pattern_);
 }
 
-FlagBuilder Builder::flag(const str_t &name) {
+FlagBuilder PatternBuilder::flag(const str_t &name) {
     return FlagBuilder(pattern_.addFlag(name), pattern_);
 }
 
-OptBuilder Builder::opt(const str_t &name) {
+OptBuilder PatternBuilder::opt(const str_t &name) {
     return OptBuilder(pattern_.addOpt(name), pattern_);
 }
 
 
 ArgBuilder::ArgBuilder(Argument &arg, Pattern &pattern)
-        : Builder(pattern), arg_(arg) {
+        : PatternBuilder(pattern), arg_(arg) {
 
 }
 
@@ -129,30 +129,30 @@ ArgValueBuilder ArgBuilder::descr(const str_t &descr) {
 
 
 ArgDescrBuilder::ArgDescrBuilder(Argument &arg, Pattern &pattern)
-        : Builder(pattern), arg_(arg) {
+        : PatternBuilder(pattern), arg_(arg) {
 
 }
 
-Builder ArgDescrBuilder::descr(const str_t &descr) {
+PatternBuilder ArgDescrBuilder::descr(const str_t &descr) {
     arg_.setDescr(descr);
-    return Builder(pattern_);
+    return PatternBuilder(pattern_);
 }
 
 
 ArgValueBuilder::ArgValueBuilder(Argument &arg, Pattern &pattern)
-        : Builder(pattern), arg_(arg) {
+        : PatternBuilder(pattern), arg_(arg) {
 
 }
 
-Builder ArgValueBuilder::defaultVal(const str_t &val) {
+PatternBuilder ArgValueBuilder::defaultVal(const str_t &val) {
     arg_.setDefault(val);
-    return Builder(pattern_);
+    return PatternBuilder(pattern_);
 }
 
 
 template <typename T>
 AliasBuilder<T>::AliasBuilder(T &param, Pattern &pattern)
-        : Builder(pattern), param_(param) {
+        : PatternBuilder(pattern), param_(param) {
 
 }
 
@@ -167,7 +167,7 @@ template class AliasBuilder<Option>;
 
 
 FlagBuilder::FlagBuilder(Flag &flag, Pattern &pattern)
-        : Builder(pattern), flag_(flag) {
+        : PatternBuilder(pattern), flag_(flag) {
 
 }
 
@@ -184,7 +184,7 @@ AliasBuilder<Flag> FlagBuilder::descr(const str_t &descr) {
 
 
 OptBuilder::OptBuilder(Option &option, Pattern &pattern)
-        : Builder(pattern), option_(option) {
+        : PatternBuilder(pattern), option_(option) {
 
 }
 
@@ -206,7 +206,7 @@ OptValueBuilder OptBuilder::descr(const str_t &descr) {
 
 
 OptDescrBuilder::OptDescrBuilder(Option &option, Pattern &pattern)
-        : Builder(pattern), option_(option) {
+        : PatternBuilder(pattern), option_(option) {
 
 }
 
@@ -217,7 +217,7 @@ AliasBuilder<Option> OptDescrBuilder::descr(const str_t &descr) {
 
 
 OptValueBuilder::OptValueBuilder(Option &option, Pattern &pattern)
-        : Builder(pattern), option_(option) {
+        : PatternBuilder(pattern), option_(option) {
 
 }
 

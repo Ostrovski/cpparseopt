@@ -87,10 +87,10 @@ namespace cpparseopt {
     typedef std::vector<Option> Options;
 
 
-    class Builder;
+    class PatternBuilder;
 
     class Pattern {
-        friend class Builder;
+        friend class PatternBuilder;
 
         Arguments arguments_;
         Flags flags_;
@@ -109,11 +109,11 @@ namespace cpparseopt {
     class FlagBuilder;
     class OptBuilder;
 
-    class Builder {
+    class PatternBuilder {
     protected:
         Pattern &pattern_;
     public:
-        Builder(Pattern &pattern);
+        PatternBuilder(Pattern &pattern);
         ArgBuilder  arg(const str_t &name = "");
         FlagBuilder flag(const str_t &name);
         OptBuilder  opt(const str_t &name);
@@ -123,7 +123,7 @@ namespace cpparseopt {
     class ArgDescrBuilder;
     class ArgValueBuilder;
 
-    class ArgBuilder: public Builder {
+    class ArgBuilder: public PatternBuilder {
         Argument &arg_;
     public:
         ArgBuilder(Argument &arg, Pattern &pattern);
@@ -131,23 +131,23 @@ namespace cpparseopt {
         ArgValueBuilder descr(const str_t &descr);
     };
 
-    class ArgDescrBuilder: public Builder {
+    class ArgDescrBuilder: public PatternBuilder {
         Argument &arg_;
     public:
         ArgDescrBuilder(Argument &arg, Pattern &pattern);
-        Builder descr(const str_t &descr);
+        PatternBuilder descr(const str_t &descr);
     };
 
-    class ArgValueBuilder: public Builder {
+    class ArgValueBuilder: public PatternBuilder {
         Argument &arg_;
     public:
         ArgValueBuilder(Argument &arg, Pattern &pattern);
-        Builder defaultVal(const str_t &val);
+        PatternBuilder defaultVal(const str_t &val);
     };
 
 
     template <typename T>
-    class AliasBuilder: public Builder {
+    class AliasBuilder: public PatternBuilder {
         T &param_;
     public:
         AliasBuilder(T &param, Pattern &pattern);
@@ -155,7 +155,7 @@ namespace cpparseopt {
     };
 
 
-    class FlagBuilder: public Builder {
+    class FlagBuilder: public PatternBuilder {
         Flag &flag_;
     public:
         FlagBuilder(Flag &flag, Pattern &pattern);
@@ -167,7 +167,7 @@ namespace cpparseopt {
     class OptDescrBuilder;
     class OptValueBuilder;
 
-    class OptBuilder: public Builder {
+    class OptBuilder: public PatternBuilder {
         Option &option_;
     public:
         OptBuilder(Option &option, Pattern &pattern);
@@ -176,14 +176,14 @@ namespace cpparseopt {
         OptValueBuilder descr(const str_t &descr);
     };
 
-    class OptDescrBuilder: public Builder {
+    class OptDescrBuilder: public PatternBuilder {
         Option &option_;
     public:
         OptDescrBuilder(Option &option, Pattern &pattern);
         AliasBuilder<Option> descr(const str_t &descr);
     };
 
-    class OptValueBuilder: public Builder {
+    class OptValueBuilder: public PatternBuilder {
         Option &option_;
     public:
         OptValueBuilder(Option &option, Pattern &pattern);
