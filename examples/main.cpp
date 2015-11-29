@@ -4,7 +4,7 @@
 using namespace cpparseopt;
 
 
-int main() {
+int main(int argc, char **argv) {
     Pattern pattern;
     PatternBuilder(pattern)
             .arg("arg1")
@@ -18,5 +18,8 @@ int main() {
             .opt("-b").alias("--baz").alias("--bazar").descr("And here we go!");
 
     std::cout << pattern.usage() << std::endl;
+
+    CmdLineParams parsed = pattern.match(argc, argv);
+
     return 0;
 }

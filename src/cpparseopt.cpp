@@ -6,7 +6,6 @@ using namespace cpparseopt;
 
 ParamGeneric::ParamGeneric(const str_t &name)
         : name_(name) {
-
 }
 
 const str_t &ParamGeneric::getDescr() const {
@@ -26,7 +25,6 @@ void ParamAliased::addAlias(const str_t &name) {
 
 ParamValued::ParamValued()
         : hasDefault_(false), hasVal_(false) {
-
 }
 
 void ParamValued::setVal(const str_t &val) {
@@ -76,15 +74,17 @@ Option::Option(const str_t &name)
 }
 
 
-Pattern::Pattern()
-        : parsed_(false) {
-
+CmdLineParams Pattern::match(int argc, char **argv) const {
+    CmdLineParams result(*this);
+    match(argc, argv, result);
+    return result;
 }
 
-void Pattern::parse(int argc, char **argv) {
-    CmdLineParser parser(argc, argv, *this);
-    parser.parse();
-    parsed_ = true;
+void Pattern::match(int argc, char **argv, CmdLineParams &dst) const {
+    if (&dst.getPattern() != this) {
+        throw 1; // TODO: ...
+    }
+    CmdLineParamsParser(argc, argv, dst);
 }
 
 const Argument &Pattern::getArg(size_t pos) const {
@@ -99,8 +99,8 @@ const Option &Pattern::getOpt(const str_t &name) const {
     return options_.back();
 }
 
-bool Pattern::hasFlag() const {
-    return false;
+const Flag &Pattern::getFlag(const str_t &name) const {
+    return flags_.back();
 }
 
 str_t Pattern::usage() const {
@@ -138,7 +138,6 @@ void Pattern::registerAlias(Option &option, const str_t &alias) {
 
 PatternBuilder::PatternBuilder(Pattern &pattern)
         : pattern_(pattern) {
-
 }
 
 ArgBuilder PatternBuilder::arg(const str_t &name) {
@@ -164,7 +163,6 @@ void PatternBuilder::registerAlias(Option &option, const str_t &alias) {
 
 ArgBuilder::ArgBuilder(Argument &arg, Pattern &pattern)
         : PatternBuilder(pattern), arg_(arg) {
-
 }
 
 ArgDescrBuilder ArgBuilder::defaultVal(const str_t &val) {
@@ -180,7 +178,6 @@ ArgValueBuilder ArgBuilder::descr(const str_t &descr) {
 
 ArgDescrBuilder::ArgDescrBuilder(Argument &arg, Pattern &pattern)
         : PatternBuilder(pattern), arg_(arg) {
-
 }
 
 PatternBuilder ArgDescrBuilder::descr(const str_t &descr) {
@@ -191,7 +188,6 @@ PatternBuilder ArgDescrBuilder::descr(const str_t &descr) {
 
 ArgValueBuilder::ArgValueBuilder(Argument &arg, Pattern &pattern)
         : PatternBuilder(pattern), arg_(arg) {
-
 }
 
 PatternBuilder ArgValueBuilder::defaultVal(const str_t &val) {
@@ -203,7 +199,6 @@ PatternBuilder ArgValueBuilder::defaultVal(const str_t &val) {
 template<typename T>
 AliasBuilder<T>::AliasBuilder(T &param, Pattern &pattern)
         : PatternBuilder(pattern), param_(param) {
-
 }
 
 template<typename T>
@@ -218,7 +213,6 @@ template class AliasBuilder<Option>;
 
 FlagBuilder::FlagBuilder(Flag &flag, Pattern &pattern)
         : PatternBuilder(pattern), flag_(flag) {
-
 }
 
 FlagBuilder FlagBuilder::alias(const str_t &alias) {
@@ -235,7 +229,6 @@ AliasBuilder<Flag> FlagBuilder::descr(const str_t &descr) {
 
 OptBuilder::OptBuilder(Option &option, Pattern &pattern)
         : PatternBuilder(pattern), option_(option) {
-
 }
 
 OptBuilder OptBuilder::alias(const str_t &alias) {
@@ -257,7 +250,6 @@ OptValueBuilder OptBuilder::descr(const str_t &descr) {
 
 OptDescrBuilder::OptDescrBuilder(Option &option, Pattern &pattern)
         : PatternBuilder(pattern), option_(option) {
-
 }
 
 AliasBuilder<Option> OptDescrBuilder::descr(const str_t &descr) {
@@ -268,7 +260,6 @@ AliasBuilder<Option> OptDescrBuilder::descr(const str_t &descr) {
 
 OptValueBuilder::OptValueBuilder(Option &option, Pattern &pattern)
         : PatternBuilder(pattern), option_(option) {
-
 }
 
 AliasBuilder<Option> OptValueBuilder::defaultVal(const str_t &val) {
@@ -277,11 +268,21 @@ AliasBuilder<Option> OptValueBuilder::defaultVal(const str_t &val) {
 }
 
 
-CmdLineParser::CmdLineParser(int argc, char **argv, Pattern &pattern)
-        : argc_(argc), argv_(argv), paramCounter_(1), pattern_(pattern) {
+CmdLineParams::CmdLineParams(const Pattern &pattern)
+        : pattern_(pattern) {
 }
 
-void CmdLineParser::parse() {
+const Pattern &CmdLineParams::getPattern() const {
+    return pattern_;
+}
+
+
+CmdLineParamsParser::CmdLineParamsParser(int argc, char **argv,
+                                         CmdLineParams &dst)
+        : argc_(argc), argv_(argv), paramCounter_(1), dst_(dst) {
+}
+
+void CmdLineParamsParser::parse(CmdLineParams &dst) {
     while (hasNextParam()) {
         if (isFlagParam()) {
             nextParam();
@@ -299,28 +300,35 @@ void CmdLineParser::parse() {
     }
 }
 
-const char *CmdLineParser::getCurrentParam() {
+const char *CmdLineParamsParser::getCurrentParam() {
     if (paramCounter_ < argc_ - 1) {
         return argv_[paramCounter_];
     }
     throw 1;  // TODO: ...
 }
 
-bool CmdLineParser::hasNextParam() {
+bool CmdLineParamsParser::hasNextParam() {
     return (paramCounter_ < argc_);
 }
 
-void CmdLineParser::nextParam() {
+void CmdLineParamsParser::nextParam() {
     if (hasNextParam()) {
         paramCounter_++;
     }
     throw 1;  // TODO: ...
 }
 
-bool CmdLineParser::isFlagParam() {
+bool CmdLineParamsParser::isFlagParam() {
+    const char *param = getCurrentParam();
+    try {
+        const Flag &flag = dst_.getPattern().getFlag(param);
+    } catch (...) {  // TODO: ...
+        return false;
+    }
+
     return false;
 }
 
-bool CmdLineParser::isOptParam() {
+bool CmdLineParamsParser::isOptParam() {
     return false;
 }

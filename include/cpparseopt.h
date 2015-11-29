@@ -51,15 +51,11 @@ namespace cpparseopt {
         size_t getPos() const;
     };
 
-    typedef std::vector<Argument> Arguments;
-
 
     class Flag: public ParamGeneric, public ParamAliased {
     public:
         Flag(const str_t &name);
     };
-
-    typedef std::vector<Flag> Flags;
 
 
     class Option: public ParamGeneric, public ParamAliased, public ParamValued {
@@ -67,32 +63,30 @@ namespace cpparseopt {
         Option(const str_t &name);
     };
 
-    typedef std::vector<Option> Options;
 
-
-    class CmdLineParser;
+    class CmdLineParams;
     class PatternBuilder;
 
     class Pattern {
-        friend class CmdLineParser;
+        // Pattern is immutable. Can be constructed only through PatternBuilder.
         friend class PatternBuilder;
+
+        typedef std::vector<Argument> Arguments;
+        typedef std::vector<Flag> Flags;
+        typedef std::vector<Option> Options;
 
         Arguments arguments_;
         Flags     flags_;
         Options   options_;
-
-        bool parsed_;
     public:
-        Pattern();
+        CmdLineParams match(int argc, char **argv) const;
+        void          match(int argc, char **argv, CmdLineParams &dst) const;
 
-        void parse(int argc, char **argv);
-
-        // Next methods raise an exception in case of parsed_ == false;
-        // Also raise an exception in case of unknown param name/pos.
+        // Next methods raise exceptions in case of unknown param name/pos.
         const Argument &getArg(size_t pos) const;
         const Argument &getArg(const str_t &name) const;
-        const Option &getOpt(const str_t &name) const;
-        bool hasFlag() const;
+        const Option   &getOpt(const str_t &name) const;
+        const Flag     &getFlag(const str_t &name) const;
 
         str_t usage() const;
 
@@ -102,11 +96,6 @@ namespace cpparseopt {
         Option   &addOpt(const str_t &name);
         void     registerAlias(Flag &flag, const str_t &alias);
         void     registerAlias(Option &option, const str_t &alias);
-
-        // Next methods raise an exception only in case of unknown name/pos.
-        // Argument &getArgRaw(size_t pos);
-        // Option &getOptRaw(const str_t &name);
-        // Flag &getFlagRaw(const str_t &name);
     };
 
 
@@ -204,7 +193,32 @@ namespace cpparseopt {
     };
 
 
-    class CmdLineParser {
+    template<typename T>
+    class ParamProxy {
+        const T &param_;
+    public:
+//        ParamProxy(const T &param);
+//        const str_t &asString() const;
+//        int          asInt() const;
+//        double       asDouble() const;
+        // TODO: asTime()
+    };
+
+
+    class CmdLineParams {
+        const Pattern &pattern_;
+    public:
+        CmdLineParams(const Pattern &pattern);
+        const Pattern &getPattern() const;
+
+//        const ParamProxy &getArg(const str_t &name) const;
+//        const ParamProxy &getArg(size_t pos) const;
+//        const ParamProxy &getOpt(const str_t &name) const;
+//        bool              hasFlag(const str_t &name) const;
+    };
+
+
+    class CmdLineParamsParser {
         // Arg - pos, name, default val, description.
         //       Default is used only if argument is not present.
         // flag - name, [alias, [alias, ...]], description.
@@ -215,11 +229,11 @@ namespace cpparseopt {
         int argc_;
         char **argv_;
         int paramCounter_;
-        Pattern &pattern_;
+        CmdLineParams &dst_;
     public:
-        CmdLineParser(int argc, char **argv, Pattern &pattern);
+        CmdLineParamsParser(int argc, char **argv, CmdLineParams &dst);
 
-        void parse();
+        void parse(CmdLineParams &dst);
         const char *getCurrentParam();
         bool        hasNextParam();
         void        nextParam();
