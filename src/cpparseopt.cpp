@@ -79,18 +79,22 @@ void Pattern::match(int argc, char **argv, CmdLineParams &dst) const {
 }
 
 const Argument &Pattern::getArg(size_t pos) const {
+    // TODO: implement me!
     return arguments_.back();
 }
 
 const Argument &Pattern::getArg(const str_t &name) const {
+    // TODO: implement me!
     return arguments_.back();
 }
 
 const Option &Pattern::getOpt(const str_t &name) const {
+    // TODO: implement me!
     return options_.back();
 }
 
 const Flag &Pattern::getFlag(const str_t &name) const {
+    // TODO: implement me!
     return flags_.back();
 }
 
@@ -260,7 +264,11 @@ AliasBuilder<Option> OptValueBuilder::defaultVal(const str_t &val) {
 
 
 ValuedParamProxy::ValuedParamProxy(const ParamValued &param, const str_t &val)
-        : param_(param), val_(val) {
+        : param_(param), val_(val), hasVal_(true) {
+}
+
+const str_t &ValuedParamProxy::asString() const {
+    return val_;
 }
 
 
@@ -279,9 +287,13 @@ CmdLineParamsParser::CmdLineParamsParser(int argc, char **argv,
 }
 
 void CmdLineParamsParser::parse(CmdLineParams &dst) {
+    // На этом этапе нужно отловить все неожидаемые параметры и
+    // все недопереданные параметры (т.е. те opts и args, для которых не заданы
+    // default val в pattern).
     while (hasNextParam()) {
         if (isFlagParam()) {
             nextParam();
+            // TODO: this.flags.set(getCurrentParam)
             continue;
         }
 
@@ -318,11 +330,10 @@ bool CmdLineParamsParser::isFlagParam() {
     const char *param = getCurrentParam();
     try {
         const Flag &flag = dst_.getPattern().getFlag(param);
-    } catch (...) {  // TODO: ...
+        return true;
+    } catch (std::runtime_error) {  // TODO: ...
         return false;
     }
-
-    return false;
 }
 
 bool CmdLineParamsParser::isOptParam() {

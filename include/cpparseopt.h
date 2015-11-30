@@ -192,12 +192,14 @@ namespace cpparseopt {
         // Value-object pattern.
         const ParamValued &param_;
         const str_t &val_;
+        const bool hasVal_;
     public:
         ValuedParamProxy(const ParamValued &param, const str_t &val);
-//        const str_t &asString() const;
-//        int          asInt() const;
-//        double       asDouble() const;
-        // TODO: asTime()
+        const str_t &asString() const;
+        // TODO:
+        // int          asInt() const;
+        // double       asDouble() const;
+        // asTime(), etc...
     };
 
 
@@ -207,8 +209,14 @@ namespace cpparseopt {
         friend class CmdLineParamsParser;
 
         const Pattern &pattern_;
+        // ValuedParamProxy by name
+        // ValuedParamProxy by pos
+        // Flags by name/alias
     public:
         CmdLineParams(const Pattern &pattern);
+// На этом этапе нужно проверять только валидность имен/позиций.
+// Значение (явно переданное или дефолтное) уже точно установлено во время
+// парсинга.
 //        const ValuedParamProxy &getArg(const str_t &name) const;
 //        const ValuedParamProxy &getArg(size_t pos) const;
 //        const ValuedParamProxy &getOpt(const str_t &name) const;
