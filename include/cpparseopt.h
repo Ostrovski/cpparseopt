@@ -27,16 +27,11 @@ namespace cpparseopt {
 
 
     class ParamValued {
-        str_t val_;
         str_t default_;
-        bool hasVal_;
         bool hasDefault_;
 
     public:
         ParamValued();
-
-        void setVal(const str_t &val);
-        bool hasVal() const;
 
         const str_t &getDefault() const;
         bool hasDefault() const;
@@ -193,11 +188,12 @@ namespace cpparseopt {
     };
 
 
-    template<typename T>
-    class ParamProxy {
-        const T &param_;
+    class ValuedParamProxy {
+        // Value-object pattern.
+        const ParamValued &param_;
+        const str_t &val_;
     public:
-//        ParamProxy(const T &param);
+        ValuedParamProxy(const ParamValued &param, const str_t &val);
 //        const str_t &asString() const;
 //        int          asInt() const;
 //        double       asDouble() const;
@@ -205,16 +201,19 @@ namespace cpparseopt {
     };
 
 
+    class CmdLineParamsParser;
+
     class CmdLineParams {
+        friend class CmdLineParamsParser;
+
         const Pattern &pattern_;
     public:
         CmdLineParams(const Pattern &pattern);
+//        const ValuedParamProxy &getArg(const str_t &name) const;
+//        const ValuedParamProxy &getArg(size_t pos) const;
+//        const ValuedParamProxy &getOpt(const str_t &name) const;
+//        bool                    hasFlag(const str_t &name) const;
         const Pattern &getPattern() const;
-
-//        const ParamProxy &getArg(const str_t &name) const;
-//        const ParamProxy &getArg(size_t pos) const;
-//        const ParamProxy &getOpt(const str_t &name) const;
-//        bool              hasFlag(const str_t &name) const;
     };
 
 

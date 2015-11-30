@@ -24,16 +24,7 @@ void ParamAliased::addAlias(const str_t &name) {
 
 
 ParamValued::ParamValued()
-        : hasDefault_(false), hasVal_(false) {
-}
-
-void ParamValued::setVal(const str_t &val) {
-    val_ = val;
-    hasVal_ = true;
-}
-
-bool ParamValued::hasVal() const {
-    return hasVal_;
+        : hasDefault_(false) {
 }
 
 const str_t &ParamValued::getDefault() const {
@@ -265,6 +256,11 @@ OptValueBuilder::OptValueBuilder(Option &option, Pattern &pattern)
 AliasBuilder<Option> OptValueBuilder::defaultVal(const str_t &val) {
     option_.setDefault(val);
     return AliasBuilder<Option>(option_, pattern_);
+}
+
+
+ValuedParamProxy::ValuedParamProxy(const ParamValued &param, const str_t &val)
+        : param_(param), val_(val) {
 }
 
 
