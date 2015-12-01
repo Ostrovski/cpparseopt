@@ -40,6 +40,7 @@ namespace cpparseopt {
 
 
     class Argument: public ParamGeneric, public ParamValued {
+        // Just a positional argument. Can have human-readable name.
         size_t pos_;
     public:
         Argument(size_t pos, const str_t &name = "");
@@ -48,12 +49,20 @@ namespace cpparseopt {
 
 
     class Flag: public ParamGeneric, public ParamAliased {
+        // Boolean flag. Exists or not. Without value.
+        // Examples:
+        //      -f / --foo / -F / --FOO
     public:
         Flag(const str_t &name);
     };
 
 
     class Option: public ParamGeneric, public ParamAliased, public ParamValued {
+        // Looks like a flag, but with value. Can have default value.
+        // Examples:
+        //      -f / --foo / -F / --FOO  (default value must be provided within the pattern!)
+        //      --foo[=<fVal>]           (the way to override default value)
+        //      -f <fVal> / --foo <fVal> (an opt without default value)
     public:
         Option(const str_t &name);
     };
@@ -79,9 +88,15 @@ namespace cpparseopt {
 
         // Next methods raise exceptions in case of unknown param name/pos.
         const Argument &getArg(size_t pos) const;
+        bool            hasArg(size_t pos) const;
         const Argument &getArg(const str_t &name) const;
+        bool            hasArg(const str_t &name) const;
+
         const Option   &getOpt(const str_t &name) const;
+        bool            hasOpt(const str_t &name) const;
+
         const Flag     &getFlag(const str_t &name) const;
+        bool            hasFlag(const str_t &name) const;
 
         str_t usage() const;
 
@@ -214,7 +229,7 @@ namespace cpparseopt {
         // Flags by name/alias
     public:
         CmdLineParams(const Pattern &pattern);
-// На этом этапе нужно проверять только валидность имен/позиций.
+// На этом этапе нужно проверять только валидность имен/позиций для get*()-методов.
 // Значение (явно переданное или дефолтное) уже точно установлено во время
 // парсинга.
 //        const ValuedParamProxy &getArg(const str_t &name) const;
@@ -239,13 +254,19 @@ namespace cpparseopt {
         CmdLineParams &dst_;
     public:
         CmdLineParamsParser(int argc, char **argv, CmdLineParams &dst);
-
         void parse(CmdLineParams &dst);
+
+    private:
         const char *getCurrentParam();
         bool        hasNextParam();
         void        nextParam();
+
         bool isFlagParam();
         bool isOptParam();
+
+        void parseArg();
+        void parseFlag();
+        void parseOpt();
     };
 }
 

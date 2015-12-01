@@ -83,9 +83,17 @@ const Argument &Pattern::getArg(size_t pos) const {
     return arguments_.back();
 }
 
+bool Pattern::hasArg(size_t pos) const {
+    return false;
+}
+
 const Argument &Pattern::getArg(const str_t &name) const {
     // TODO: implement me!
     return arguments_.back();
+}
+
+bool Pattern::hasArg(const str_t &name) const {
+    return false;
 }
 
 const Option &Pattern::getOpt(const str_t &name) const {
@@ -93,9 +101,18 @@ const Option &Pattern::getOpt(const str_t &name) const {
     return options_.back();
 }
 
+
+bool Pattern::hasOpt(const str_t &name) const {
+    return false;
+}
+
 const Flag &Pattern::getFlag(const str_t &name) const {
     // TODO: implement me!
     return flags_.back();
+}
+
+bool Pattern::hasFlag(const str_t &name) const {
+    return false;
 }
 
 str_t Pattern::usage() const {
@@ -292,19 +309,16 @@ void CmdLineParamsParser::parse(CmdLineParams &dst) {
     // default val в pattern).
     while (hasNextParam()) {
         if (isFlagParam()) {
-            nextParam();
-            // TODO: this.flags.set(getCurrentParam)
+            parseFlag();
             continue;
         }
 
         if (isOptParam()) {
-            nextParam();
+            parseOpt();
             continue;
         }
 
-        // is argument
-        // ...
-        nextParam();
+        parseArg();
     }
 }
 
@@ -327,15 +341,23 @@ void CmdLineParamsParser::nextParam() {
 }
 
 bool CmdLineParamsParser::isFlagParam() {
-    const char *param = getCurrentParam();
-    try {
-        const Flag &flag = dst_.getPattern().getFlag(param);
-        return true;
-    } catch (std::runtime_error) {  // TODO: ...
-        return false;
-    }
+    return dst_.getPattern().hasFlag(getCurrentParam());
 }
 
 bool CmdLineParamsParser::isOptParam() {
-    return false;
+    return dst_.getPattern().hasOpt(getCurrentParam());
 }
+
+void CmdLineParamsParser::parseArg() {
+    nextParam();
+}
+
+void CmdLineParamsParser::parseFlag() {
+    // TODO: this.flags.set(getCurrentParam)
+    nextParam();
+}
+
+void CmdLineParamsParser::parseOpt() {
+    nextParam();
+}
+
