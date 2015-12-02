@@ -210,6 +210,7 @@ namespace cpparseopt {
         const bool hasVal_;
     public:
         ValuedParamProxy(const ParamValued &param, const str_t &val);
+        operator std::string() const;
         const str_t &asString() const;
         // TODO:
         // int          asInt() const;
@@ -232,10 +233,10 @@ namespace cpparseopt {
 // На этом этапе нужно проверять только валидность имен/позиций для get*()-методов.
 // Значение (явно переданное или дефолтное) уже точно установлено во время
 // парсинга.
-//        const ValuedParamProxy &getArg(const str_t &name) const;
-//        const ValuedParamProxy &getArg(size_t pos) const;
-//        const ValuedParamProxy &getOpt(const str_t &name) const;
-//        bool                    hasFlag(const str_t &name) const;
+        const ValuedParamProxy &getArg(const str_t &name) const;
+        const ValuedParamProxy &getArg(size_t pos) const;
+        //const ValuedParamProxy &getOpt(const str_t &name) const;
+        //bool                    hasFlag(const str_t &name) const;
         const Pattern &getPattern() const;
     };
 
@@ -251,10 +252,10 @@ namespace cpparseopt {
         int argc_;
         char **argv_;
         int paramCounter_;
-        CmdLineParams &dst_;
+        CmdLineParams *dst_;
     public:
-        CmdLineParamsParser(int argc, char **argv, CmdLineParams &dst);
-        void parse(CmdLineParams &dst);
+        CmdLineParamsParser();
+        void parse(int argc, char **argv, CmdLineParams &dst);
 
     private:
         const char *getCurrentParam();
@@ -267,6 +268,8 @@ namespace cpparseopt {
         void parseArg();
         void parseFlag();
         void parseOpt();
+
+        void reset(int argc, char **argv, CmdLineParams &dst);
     };
 }
 

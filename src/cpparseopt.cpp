@@ -75,7 +75,8 @@ void Pattern::match(int argc, char **argv, CmdLineParams &dst) const {
     if (&dst.getPattern() != this) {
         throw 1; // TODO: ...
     }
-    CmdLineParamsParser(argc, argv, dst);
+    CmdLineParamsParser parser;
+    parser.parse(argc, argv, dst);
 }
 
 const Argument &Pattern::getArg(size_t pos) const {
@@ -284,6 +285,10 @@ ValuedParamProxy::ValuedParamProxy(const ParamValued &param, const str_t &val)
         : param_(param), val_(val), hasVal_(true) {
 }
 
+ValuedParamProxy::operator std::string() const {
+    return asString();
+}
+
 const str_t &ValuedParamProxy::asString() const {
     return val_;
 }
@@ -293,17 +298,26 @@ CmdLineParams::CmdLineParams(const Pattern &pattern)
         : pattern_(pattern) {
 }
 
+const ValuedParamProxy &CmdLineParams::getArg(const str_t &name) const {
+    return ValuedParamProxy(pattern_.getArg(name), "");
+}
+
+const ValuedParamProxy &CmdLineParams::getArg(size_t pos) const {
+    return ValuedParamProxy(pattern_.getArg(pos), "");
+}
+
 const Pattern &CmdLineParams::getPattern() const {
     return pattern_;
 }
 
 
-CmdLineParamsParser::CmdLineParamsParser(int argc, char **argv,
-                                         CmdLineParams &dst)
-        : argc_(argc), argv_(argv), paramCounter_(1), dst_(dst) {
+CmdLineParamsParser::CmdLineParamsParser()
+        : paramCounter_(0), argc_(0), argv_(0), dst_(0) {
 }
 
-void CmdLineParamsParser::parse(CmdLineParams &dst) {
+void CmdLineParamsParser::parse(int argc, char **argv, CmdLineParams &dst) {
+    reset(argc, argv, dst);
+
     // На этом этапе нужно отловить все неожидаемые параметры и
     // все недопереданные параметры (т.е. те opts и args, для которых не заданы
     // default val в pattern).
@@ -323,7 +337,7 @@ void CmdLineParamsParser::parse(CmdLineParams &dst) {
 }
 
 const char *CmdLineParamsParser::getCurrentParam() {
-    if (paramCounter_ < argc_ - 1) {
+    if (paramCounter_ < argc_) {
         return argv_[paramCounter_];
     }
     throw 1;  // TODO: ...
@@ -341,11 +355,11 @@ void CmdLineParamsParser::nextParam() {
 }
 
 bool CmdLineParamsParser::isFlagParam() {
-    return dst_.getPattern().hasFlag(getCurrentParam());
+    return dst_->getPattern().hasFlag(getCurrentParam());
 }
 
 bool CmdLineParamsParser::isOptParam() {
-    return dst_.getPattern().hasOpt(getCurrentParam());
+    return dst_->getPattern().hasOpt(getCurrentParam());
 }
 
 void CmdLineParamsParser::parseArg() {
@@ -361,3 +375,9 @@ void CmdLineParamsParser::parseOpt() {
     nextParam();
 }
 
+void CmdLineParamsParser::reset(int argc, char **argv, CmdLineParams &dst) {
+    argc_ = argc;
+    argv_ = argv;
+    dst_ = &dst;
+    paramCounter_ = 1;
+}
