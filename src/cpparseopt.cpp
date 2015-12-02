@@ -8,6 +8,10 @@ ParamGeneric::ParamGeneric(const str_t &name)
         : name_(name) {
 }
 
+const str_t &ParamGeneric::getName() const {
+    return name_;
+}
+
 const str_t &ParamGeneric::getDescr() const {
     return descr_;
 }
@@ -299,11 +303,23 @@ CmdLineParams::CmdLineParams(const Pattern &pattern)
 }
 
 const ValuedParamProxy &CmdLineParams::getArg(const str_t &name) const {
-    return ValuedParamProxy(pattern_.getArg(name), "");
+    for (Params::const_iterator it = arguments_.begin(); it != arguments_.end(); ++it) {
+        if (*it.param_.getName() == name) {  // TODO: hack
+            return *it;
+        }
+    }
+
+    throw 1;  // TODO: ...
 }
 
 const ValuedParamProxy &CmdLineParams::getArg(size_t pos) const {
-    return ValuedParamProxy(pattern_.getArg(pos), "");
+    for (Params::const_iterator it = arguments_.begin(); it != arguments_.end(); ++it) {
+        if (*it->param_.getPos() == pos) {  // TODO: hack
+            return *it;
+        }
+    }
+
+    throw 1;  // TODO: ...
 }
 
 const Pattern &CmdLineParams::getPattern() const {
@@ -322,17 +338,18 @@ void CmdLineParamsParser::parse(int argc, char **argv, CmdLineParams &dst) {
     // все недопереданные параметры (т.е. те opts и args, для которых не заданы
     // default val в pattern).
     while (hasNextParam()) {
-        if (isFlagParam()) {
+        const char *param = nextParam();
+        if (isFlagParam(param)) {
             parseFlag();
             continue;
         }
 
-        if (isOptParam()) {
+        if (isOptParam(param)) {
             parseOpt();
             continue;
         }
 
-        parseArg();
+        parseArg(param);
     }
 }
 
@@ -344,35 +361,38 @@ const char *CmdLineParamsParser::getCurrentParam() {
 }
 
 bool CmdLineParamsParser::hasNextParam() {
-    return (paramCounter_ < argc_);
+    return (paramCounter_ + 1 < argc_);
 }
 
-void CmdLineParamsParser::nextParam() {
+const char *CmdLineParamsParser::nextParam() {
     if (hasNextParam()) {
         paramCounter_++;
+        return getCurrentParam();
     }
     throw 1;  // TODO: ...
 }
 
-bool CmdLineParamsParser::isFlagParam() {
-    return dst_->getPattern().hasFlag(getCurrentParam());
+bool CmdLineParamsParser::isFlagParam(const char *param) {
+    return false; // TODO: dst_->getPattern().hasFlag(getCurrentParam());
 }
 
-bool CmdLineParamsParser::isOptParam() {
-    return dst_->getPattern().hasOpt(getCurrentParam());
+bool CmdLineParamsParser::isOptParam(const char *param) {
+    return false; // TODO: dst_->getPattern().hasOpt(getCurrentParam());
 }
 
-void CmdLineParamsParser::parseArg() {
-    nextParam();
+void CmdLineParamsParser::parseArg(const char *param) {
+    if (!dst_->getPattern().hasArg(dst_->arguments_.size())) {
+        throw 1;  // TODO: ...
+    }
+    dst_->arguments_.push_back(ValuedParamProxy(dst_->getPattern().getArg(dst_->arguments_.size()), param));
 }
 
 void CmdLineParamsParser::parseFlag() {
     // TODO: this.flags.set(getCurrentParam)
-    nextParam();
 }
 
 void CmdLineParamsParser::parseOpt() {
-    nextParam();
+
 }
 
 void CmdLineParamsParser::reset(int argc, char **argv, CmdLineParams &dst) {

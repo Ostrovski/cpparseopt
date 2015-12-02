@@ -10,9 +10,10 @@ namespace cpparseopt {
     class ParamGeneric {
         str_t name_;
         str_t descr_;
-
     public:
         ParamGeneric(const str_t &name = "");
+
+        const str_t &getName() const;
 
         const str_t &getDescr() const;
         void setDescr(const str_t &descr);
@@ -205,10 +206,10 @@ namespace cpparseopt {
 
     class ValuedParamProxy {
         // Value-object pattern.
-        const ParamValued &param_;
         const str_t &val_;
         const bool hasVal_;
     public:
+        const ParamValued &param_;  // TODO: hack
         ValuedParamProxy(const ParamValued &param, const str_t &val);
         operator std::string() const;
         const str_t &asString() const;
@@ -224,7 +225,10 @@ namespace cpparseopt {
     class CmdLineParams {
         friend class CmdLineParamsParser;
 
+        typedef std::vector<ValuedParamProxy> Params;
+
         const Pattern &pattern_;
+        Params arguments_;
         // ValuedParamProxy by name
         // ValuedParamProxy by pos
         // Flags by name/alias
@@ -260,12 +264,12 @@ namespace cpparseopt {
     private:
         const char *getCurrentParam();
         bool        hasNextParam();
-        void        nextParam();
+        const char *nextParam();
 
-        bool isFlagParam();
-        bool isOptParam();
+        bool isFlagParam(const char *param);
+        bool isOptParam(const char *param);
 
-        void parseArg();
+        void parseArg(const char *param);
         void parseFlag();
         void parseOpt();
 
