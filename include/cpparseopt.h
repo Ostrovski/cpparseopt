@@ -8,22 +8,25 @@ namespace cpparseopt {
     typedef std::string str_t;
 
     class ParamGeneric {
-        str_t name_;
         str_t descr_;
+
+    protected:
+        std::vector<str_t> names_;
+
     public:
         ParamGeneric(const str_t &name = "");
 
-        const str_t &getName() const;
+        bool hasName(const str_t &name) const;
 
         const str_t &getDescr() const;
         void setDescr(const str_t &descr);
     };
 
 
-    class ParamAliased {
-        std::vector<str_t> aliases_;
+    class ParamAliased : public ParamGeneric {
     public:
-        void addAlias(const str_t &name);
+        ParamAliased(const str_t &name);
+        void addAlias(const str_t &alias);
     };
 
 
@@ -40,7 +43,7 @@ namespace cpparseopt {
     };
 
 
-    class Argument: public ParamGeneric, public ParamValued {
+    class Argument : public ParamGeneric, public ParamValued {
         // Just a positional argument. Can have human-readable name.
         size_t pos_;
     public:
@@ -49,7 +52,7 @@ namespace cpparseopt {
     };
 
 
-    class Flag: public ParamGeneric, public ParamAliased {
+    class Flag : public ParamAliased {
         // Boolean flag. Exists or not. Without value.
         // Examples:
         //      -f / --foo / -F / --FOO
@@ -58,7 +61,7 @@ namespace cpparseopt {
     };
 
 
-    class Option: public ParamGeneric, public ParamAliased, public ParamValued {
+    class Option : public ParamAliased, public ParamValued {
         // Looks like a flag, but with value. Can have default value.
         // Examples:
         //      -f / --foo / -F / --FOO  (default value must be provided within the pattern!)
@@ -136,7 +139,7 @@ namespace cpparseopt {
     class ArgDescrBuilder;
     class ArgValueBuilder;
 
-    class ArgBuilder: public PatternBuilder {
+    class ArgBuilder : public PatternBuilder {
         Argument &arg_;
     public:
         ArgBuilder(Argument &arg, Pattern &pattern);
@@ -144,14 +147,14 @@ namespace cpparseopt {
         ArgValueBuilder descr(const str_t &descr);
     };
 
-    class ArgDescrBuilder: public PatternBuilder {
+    class ArgDescrBuilder : public PatternBuilder {
         Argument &arg_;
     public:
         ArgDescrBuilder(Argument &arg, Pattern &pattern);
         PatternBuilder descr(const str_t &descr);
     };
 
-    class ArgValueBuilder: public PatternBuilder {
+    class ArgValueBuilder : public PatternBuilder {
         Argument &arg_;
     public:
         ArgValueBuilder(Argument &arg, Pattern &pattern);
@@ -160,7 +163,7 @@ namespace cpparseopt {
 
 
     template<typename T>
-    class AliasBuilder: public PatternBuilder {
+    class AliasBuilder : public PatternBuilder {
         T &param_;
     public:
         AliasBuilder(T &param, Pattern &pattern);
@@ -168,7 +171,7 @@ namespace cpparseopt {
     };
 
 
-    class FlagBuilder: public PatternBuilder {
+    class FlagBuilder : public PatternBuilder {
         Flag &flag_;
     public:
         FlagBuilder(Flag &flag, Pattern &pattern);
@@ -180,7 +183,7 @@ namespace cpparseopt {
     class OptDescrBuilder;
     class OptValueBuilder;
 
-    class OptBuilder: public PatternBuilder {
+    class OptBuilder : public PatternBuilder {
         Option &option_;
     public:
         OptBuilder(Option &option, Pattern &pattern);
@@ -189,14 +192,14 @@ namespace cpparseopt {
         OptValueBuilder descr(const str_t &descr);
     };
 
-    class OptDescrBuilder: public PatternBuilder {
+    class OptDescrBuilder : public PatternBuilder {
         Option &option_;
     public:
         OptDescrBuilder(Option &option, Pattern &pattern);
         AliasBuilder<Option> descr(const str_t &descr);
     };
 
-    class OptValueBuilder: public PatternBuilder {
+    class OptValueBuilder : public PatternBuilder {
         Option &option_;
     public:
         OptValueBuilder(Option &option, Pattern &pattern);
@@ -204,13 +207,11 @@ namespace cpparseopt {
     };
 
 
-    class ValuedParamProxy {
+    class ParsedParam {
         // Value-object pattern.
-        const str_t &val_;
-        const bool hasVal_;
+        const str_t val_;
     public:
-        const ParamValued &param_;  // TODO: hack
-        ValuedParamProxy(const ParamValued &param, const str_t &val);
+        ParsedParam(const str_t &val = "");
         operator std::string() const;
         const str_t &asString() const;
         // TODO:
@@ -220,26 +221,33 @@ namespace cpparseopt {
     };
 
 
+    class ParsedArgParam : public ParsedParam {
+        const Argument &argument_;
+    public:
+        ParsedArgParam(const Argument &argument, const str_t &val);
+        const Argument &getArg() const;
+    };
+
     class CmdLineParamsParser;
 
     class CmdLineParams {
         friend class CmdLineParamsParser;
 
-        typedef std::vector<ValuedParamProxy> Params;
+        typedef std::vector<ParsedArgParam> ArgParams;
+        typedef std::vector<ParsedArgParam>::const_iterator ArgParamsIter;
 
         const Pattern &pattern_;
-        Params arguments_;
-        // ValuedParamProxy by name
-        // ValuedParamProxy by pos
-        // Flags by name/alias
+        ArgParams arguments_;
+        // FlagParams flags_
+        // OptParams options_
     public:
         CmdLineParams(const Pattern &pattern);
 // На этом этапе нужно проверять только валидность имен/позиций для get*()-методов.
 // Значение (явно переданное или дефолтное) уже точно установлено во время
 // парсинга.
-        const ValuedParamProxy &getArg(const str_t &name) const;
-        const ValuedParamProxy &getArg(size_t pos) const;
-        //const ValuedParamProxy &getOpt(const str_t &name) const;
+        const ParsedParam &getArg(const str_t &name) const;
+        const ParsedParam &getArg(size_t pos) const;
+        //const ParsedParam &getOpt(const str_t &name) const;
         //bool                    hasFlag(const str_t &name) const;
         const Pattern &getPattern() const;
     };
@@ -256,13 +264,13 @@ namespace cpparseopt {
         int argc_;
         char **argv_;
         int paramCounter_;
-        CmdLineParams *dst_;
+        CmdLineParams *params_;
     public:
         CmdLineParamsParser();
         void parse(int argc, char **argv, CmdLineParams &dst);
 
     private:
-        const char *getCurrentParam();
+        const char *currentParam();
         bool        hasNextParam();
         const char *nextParam();
 

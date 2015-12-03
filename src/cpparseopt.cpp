@@ -1,15 +1,16 @@
 #include "../include/cpparseopt.h"
-#include <assert.h>
+#include <algorithm>
+#include <cassert>
 
 using namespace cpparseopt;
 
 
 ParamGeneric::ParamGeneric(const str_t &name)
-        : name_(name) {
+        : names_(1, name) {
 }
 
-const str_t &ParamGeneric::getName() const {
-    return name_;
+bool ParamGeneric::hasName(const str_t &name) const {
+    return std::find(names_.begin(), names_.end(), name) != names_.end();
 }
 
 const str_t &ParamGeneric::getDescr() const {
@@ -21,9 +22,14 @@ void ParamGeneric::setDescr(const str_t &descr) {
 }
 
 
-void ParamAliased::addAlias(const str_t &name) {
+ParamAliased::ParamAliased(const str_t &name)
+        : ParamGeneric(name) {
+
+}
+
+void ParamAliased::addAlias(const str_t &alias) {
     // TODO: check collision with other aliases
-    aliases_.push_back(name);
+    names_.push_back(alias);
 }
 
 
@@ -58,13 +64,13 @@ size_t Argument::getPos() const {
 
 
 Flag::Flag(const str_t &name)
-        : ParamGeneric(name) {
+        : ParamAliased(name) {
     // TODO: check name format
 }
 
 
 Option::Option(const str_t &name)
-        : ParamGeneric(name) {
+        : ParamAliased(name) {
     // TODO: check name format
 }
 
@@ -84,12 +90,22 @@ void Pattern::match(int argc, char **argv, CmdLineParams &dst) const {
 }
 
 const Argument &Pattern::getArg(size_t pos) const {
-    // TODO: implement me!
-    return arguments_.back();
+    // TODO: try ... catch
+    return arguments_.at(pos);
 }
 
+class ArgPosMatcher
+{
+    size_t pos_;
+public:
+    ArgPosMatcher(size_t pos) : pos_(pos) {}
+    bool operator()(const Argument &arg) { return pos_ == arg.getPos(); }
+};
+
 bool Pattern::hasArg(size_t pos) const {
-    return false;
+    return std::find_if(arguments_.begin(),
+                        arguments_.end(),
+                        ArgPosMatcher(pos)) != arguments_.end();
 }
 
 const Argument &Pattern::getArg(const str_t &name) const {
@@ -285,16 +301,25 @@ AliasBuilder<Option> OptValueBuilder::defaultVal(const str_t &val) {
 }
 
 
-ValuedParamProxy::ValuedParamProxy(const ParamValued &param, const str_t &val)
-        : param_(param), val_(val), hasVal_(true) {
+ParsedParam::ParsedParam(const str_t &val)
+        : val_(val) {
 }
 
-ValuedParamProxy::operator std::string() const {
-    return asString();
+ParsedParam::operator std::string() const {
+    return str_t(asString());
 }
 
-const str_t &ValuedParamProxy::asString() const {
+const str_t &ParsedParam::asString() const {
     return val_;
+}
+
+
+ParsedArgParam::ParsedArgParam(const Argument &argument, const str_t &val)
+        : ParsedParam(val), argument_(argument) {
+}
+
+const Argument &ParsedArgParam::getArg() const {
+    return argument_;
 }
 
 
@@ -302,9 +327,9 @@ CmdLineParams::CmdLineParams(const Pattern &pattern)
         : pattern_(pattern) {
 }
 
-const ValuedParamProxy &CmdLineParams::getArg(const str_t &name) const {
-    for (Params::const_iterator it = arguments_.begin(); it != arguments_.end(); ++it) {
-        if (*it.param_.getName() == name) {  // TODO: hack
+const ParsedParam &CmdLineParams::getArg(const str_t &name) const {
+    for (ArgParamsIter it = arguments_.begin(); it != arguments_.end(); ++it) {
+        if ((*it).getArg().hasName(name)) {
             return *it;
         }
     }
@@ -312,9 +337,9 @@ const ValuedParamProxy &CmdLineParams::getArg(const str_t &name) const {
     throw 1;  // TODO: ...
 }
 
-const ValuedParamProxy &CmdLineParams::getArg(size_t pos) const {
-    for (Params::const_iterator it = arguments_.begin(); it != arguments_.end(); ++it) {
-        if (*it->param_.getPos() == pos) {  // TODO: hack
+const ParsedParam &CmdLineParams::getArg(size_t pos) const {
+    for (ArgParamsIter it = arguments_.begin(); it != arguments_.end(); ++it) {
+        if ((*it).getArg().getPos() == pos) {
             return *it;
         }
     }
@@ -328,7 +353,7 @@ const Pattern &CmdLineParams::getPattern() const {
 
 
 CmdLineParamsParser::CmdLineParamsParser()
-        : paramCounter_(0), argc_(0), argv_(0), dst_(0) {
+        : paramCounter_(0), argc_(0), argv_(0), params_(0) {
 }
 
 void CmdLineParamsParser::parse(int argc, char **argv, CmdLineParams &dst) {
@@ -353,7 +378,7 @@ void CmdLineParamsParser::parse(int argc, char **argv, CmdLineParams &dst) {
     }
 }
 
-const char *CmdLineParamsParser::getCurrentParam() {
+const char *CmdLineParamsParser::currentParam() {
     if (paramCounter_ < argc_) {
         return argv_[paramCounter_];
     }
@@ -367,28 +392,30 @@ bool CmdLineParamsParser::hasNextParam() {
 const char *CmdLineParamsParser::nextParam() {
     if (hasNextParam()) {
         paramCounter_++;
-        return getCurrentParam();
+        return currentParam();
     }
     throw 1;  // TODO: ...
 }
 
 bool CmdLineParamsParser::isFlagParam(const char *param) {
-    return false; // TODO: dst_->getPattern().hasFlag(getCurrentParam());
+    return false; // TODO: params_->getPattern().hasFlag(currentParam());
 }
 
 bool CmdLineParamsParser::isOptParam(const char *param) {
-    return false; // TODO: dst_->getPattern().hasOpt(getCurrentParam());
+    return false; // TODO: params_->getPattern().hasOpt(currentParam());
 }
 
 void CmdLineParamsParser::parseArg(const char *param) {
-    if (!dst_->getPattern().hasArg(dst_->arguments_.size())) {
+    if (!params_->getPattern().hasArg(params_->arguments_.size())) {
         throw 1;  // TODO: ...
     }
-    dst_->arguments_.push_back(ValuedParamProxy(dst_->getPattern().getArg(dst_->arguments_.size()), param));
+    // TODO: beautify!
+    params_->arguments_.push_back(ParsedArgParam(params_->getPattern().getArg(params_->arguments_.size()),
+                                                 param));
 }
 
 void CmdLineParamsParser::parseFlag() {
-    // TODO: this.flags.set(getCurrentParam)
+    // TODO: this.flags.set(currentParam)
 }
 
 void CmdLineParamsParser::parseOpt() {
@@ -398,6 +425,6 @@ void CmdLineParamsParser::parseOpt() {
 void CmdLineParamsParser::reset(int argc, char **argv, CmdLineParams &dst) {
     argc_ = argc;
     argv_ = argv;
-    dst_ = &dst;
-    paramCounter_ = 1;
+    params_ = &dst;
+    paramCounter_ = 0;
 }

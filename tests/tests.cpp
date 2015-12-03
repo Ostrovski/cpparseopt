@@ -43,7 +43,7 @@ void Test__PatternBuilder__SimpleArg() {
 
     ASSERT(&argByPos == &argByName);
     ASSERT_EQ(pos, argByPos.getPos());
-    ASSERT_EQ(str_t("arg"), argByPos.getName());
+    ASSERT(argByPos.hasName("arg"));
     ASSERT(!argByPos.hasDefault());
 }
 
@@ -65,8 +65,8 @@ void Test__Parser__SimpleArg() {
     CmdLineParams params = pattern.match(static_cast<int>(sizeOfArray(argv)),
                                          const_cast<char **>(argv));
 
-    ASSERT_EQ(str_t("arg"), str_t(params.getArg(0)));
-    ASSERT_EQ(str_t("arg"), str_t(params.getArg("arg")));
+    ASSERT_EQ(str_t("param0"), str_t(params.getArg(0)));
+    ASSERT_EQ(str_t("param0"), str_t(params.getArg("arg")));
 }
 
 void TestSuite__Parser() {
