@@ -334,7 +334,7 @@ const ParsedParam &CmdLineParams::getArg(const str_t &name) const {
         }
     }
 
-    throw 1;  // TODO: ...
+    throw Exception("No argument with name [" + name + "]");
 }
 
 const ParsedParam &CmdLineParams::getArg(size_t pos) const {
@@ -344,7 +344,7 @@ const ParsedParam &CmdLineParams::getArg(size_t pos) const {
         }
     }
 
-    throw 1;  // TODO: ...
+    throw Exception("No argument at position [" + std::to_string(pos) + "]");
 }
 
 const Pattern &CmdLineParams::getPattern() const {
@@ -427,4 +427,9 @@ void CmdLineParamsParser::reset(int argc, char **argv, CmdLineParams &dst) {
     argv_ = argv;
     params_ = &dst;
     paramCounter_ = 0;
+}
+
+
+Exception::Exception(const std::string &msg)
+        : runtime_error(msg) {
 }

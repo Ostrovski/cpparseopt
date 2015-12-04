@@ -283,6 +283,12 @@ namespace cpparseopt {
 
         void reset(int argc, char **argv, CmdLineParams &dst);
     };
+
+
+    class Exception : public std::runtime_error {
+    public:
+        Exception(const std::string &msg);
+    };
 }
 
 #endif //CPPARSEOPT_CPPARSEOPT_H
