@@ -2,15 +2,25 @@
 #include <algorithm>
 #include <cassert>
 
+#ifdef _DEBUG
+#define _THROW_EXC(msg) throw Exception((msg), __FILE__, __LINE__)
+#else
+#define _THROW_EXC(msg) throw Exception((msg))
+#endif
+
 using namespace cpparseopt;
 
 
+ParamGeneric::ParamGeneric() {
+}
+
 ParamGeneric::ParamGeneric(const str_t &name)
-        : names_(1, name) {
+        : names_(1, ensureName(name)) {
 }
 
 bool ParamGeneric::hasName(const str_t &name) const {
-    return std::find(names_.begin(), names_.end(), name) != names_.end();
+    return !name.empty()
+           && std::find(names_.begin(), names_.end(), name) != names_.end();
 }
 
 const str_t &ParamGeneric::getDescr() const {
@@ -21,6 +31,13 @@ void ParamGeneric::setDescr(const str_t &descr) {
     descr_ = descr;
 }
 
+const str_t &ParamGeneric::ensureName(const str_t &name) const {
+    if (name.empty()) {
+        _THROW_EXC("Empty param name");
+    }
+    return name;
+}
+
 
 ParamAliased::ParamAliased(const str_t &name)
         : ParamGeneric(name) {
@@ -28,8 +45,14 @@ ParamAliased::ParamAliased(const str_t &name)
 }
 
 void ParamAliased::addAlias(const str_t &alias) {
+    // TODO: check empty alias
     // TODO: check collision with other aliases
     names_.push_back(alias);
+}
+
+const str_t &ParamAliased::ensureName(const str_t &name) const {
+    // TODO: ...
+    return name;
 }
 
 
@@ -53,25 +76,33 @@ void ParamValued::setDefault(const str_t &val) {
 }
 
 
+Argument::Argument(size_t pos)
+        : pos_(pos) {
+}
+
 Argument::Argument(size_t pos, const str_t &name)
-        : ParamGeneric(name), pos_(pos) {
-    // TODO: check name format
+        : ParamGeneric(ensureName(name)), pos_(pos) {
 }
 
 size_t Argument::getPos() const {
     return pos_;
 }
 
+const str_t &Argument::ensureName(const str_t &name) const {
+    if (name.empty() || str_t::npos != name.find(' ') || name.find('-') == 0) {
+        _THROW_EXC("Bad argument name [" + name + "]");
+    }
+    return name;
+}
+
 
 Flag::Flag(const str_t &name)
         : ParamAliased(name) {
-    // TODO: check name format
 }
 
 
 Option::Option(const str_t &name)
         : ParamAliased(name) {
-    // TODO: check name format
 }
 
 
@@ -140,20 +171,25 @@ str_t Pattern::usage() const {
     return "Usage here";
 }
 
+Argument &Pattern::addArg() {
+    arguments_.push_back(Argument(arguments_.size()));
+    return arguments_.back();
+}
+
 Argument &Pattern::addArg(const str_t &name) {
-    // TODO: add name collision check
+    // TODO: name collision check
     arguments_.push_back(Argument(arguments_.size(), name));
     return arguments_.back();
 }
 
 Flag &Pattern::addFlag(const str_t &name) {
-    // TODO: add name collision check
+    // TODO: name collision check
     flags_.push_back(Flag(name));
     return flags_.back();
 }
 
 Option &Pattern::addOpt(const str_t &name) {
-    // TODO: add name collision check
+    // TODO: name collision check
     options_.push_back(Option(name));
     return options_.back();
 }
@@ -171,6 +207,10 @@ void Pattern::registerAlias(Option &option, const str_t &alias) {
 
 PatternBuilder::PatternBuilder(Pattern &pattern)
         : pattern_(pattern) {
+}
+
+ArgBuilder PatternBuilder::arg() {
+    return ArgBuilder(pattern_.addArg(), pattern_);
 }
 
 ArgBuilder PatternBuilder::arg(const str_t &name) {
@@ -333,8 +373,7 @@ const ParsedParam &CmdLineParams::getArg(const str_t &name) const {
             return *it;
         }
     }
-
-    throw Exception("No argument with name [" + name + "]");
+    _THROW_EXC("No argument with name [" + name + "]");
 }
 
 const ParsedParam &CmdLineParams::getArg(size_t pos) const {
@@ -343,8 +382,7 @@ const ParsedParam &CmdLineParams::getArg(size_t pos) const {
             return *it;
         }
     }
-
-    throw Exception("No argument at position [" + std::to_string(pos) + "]");
+    _THROW_EXC("No argument at position [" + std::to_string(pos) + "]");
 }
 
 const Pattern &CmdLineParams::getPattern() const {
@@ -432,4 +470,13 @@ void CmdLineParamsParser::reset(int argc, char **argv, CmdLineParams &dst) {
 
 Exception::Exception(const std::string &msg)
         : runtime_error(msg) {
+}
+
+Exception::Exception(const std::string &msg, const char *file, size_t line)
+        : runtime_error(makeMsg(msg, file, line)) {
+}
+
+std::string Exception::makeMsg(const std::string &msg, const char *file,
+                           size_t line) {
+    return msg + "\n    " + file + ":" + std::to_string(line);
 }

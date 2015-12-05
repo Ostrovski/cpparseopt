@@ -14,12 +14,16 @@ namespace cpparseopt {
         std::vector<str_t> names_;
 
     public:
-        ParamGeneric(const str_t &name = "");
+        ParamGeneric();
+        ParamGeneric(const str_t &name);
 
         bool hasName(const str_t &name) const;
 
         const str_t &getDescr() const;
         void setDescr(const str_t &descr);
+
+    private:
+        const str_t &ensureName(const str_t &name) const;
     };
 
 
@@ -27,6 +31,9 @@ namespace cpparseopt {
     public:
         ParamAliased(const str_t &name);
         void addAlias(const str_t &alias);
+
+    private:
+        const str_t &ensureName(const str_t &name) const;
     };
 
 
@@ -47,8 +54,12 @@ namespace cpparseopt {
         // Just a positional argument. Can have human-readable name.
         size_t pos_;
     public:
-        Argument(size_t pos, const str_t &name = "");
+        Argument(size_t pos);
+        Argument(size_t pos, const str_t &name);
         size_t getPos() const;
+
+    private:
+        const str_t &ensureName(const str_t &name) const;
     };
 
 
@@ -105,6 +116,7 @@ namespace cpparseopt {
         str_t usage() const;
 
     private:
+        Argument &addArg();
         Argument &addArg(const str_t &name);
         Flag     &addFlag(const str_t &name);
         Option   &addOpt(const str_t &name);
@@ -126,7 +138,8 @@ namespace cpparseopt {
 
     public:
         PatternBuilder(Pattern &pattern);
-        ArgBuilder  arg(const str_t &name = "");
+        ArgBuilder  arg();
+        ArgBuilder  arg(const str_t &name);
         FlagBuilder flag(const str_t &name);
         OptBuilder  opt(const str_t &name);
 
@@ -288,6 +301,9 @@ namespace cpparseopt {
     class Exception : public std::runtime_error {
     public:
         Exception(const std::string &msg);
+        Exception(const std::string &msg, const char *file, size_t line);
+        std::string makeMsg(const std::string &msg, const char *file,
+                            size_t line);
     };
 }
 

@@ -5,11 +5,17 @@
 
 #define ASSERT_EQ(e, a) assertEquals((e), (a), STOP_ON_ERR, __FILE__, __LINE__)
 #define ASSERT(v) ASSERT_EQ(true, (v))
-#define ASSERT_THROWS(expression, ET) do {                                \
-                                          try {                           \
-                                              (expression); ASSERT(false); \
-                                          } catch(ET) { ASSERT(true); }  \
-                                      } while(false)
+#define _THROWS(expression, ET, throws) do {                                   \
+                                            try {                              \
+                                                (expression); ASSERT(!throws); \
+                                            } catch(const ET &e) {             \
+                                                std::cout << e.what()          \
+                                                    << std::endl;              \
+                                                ASSERT(throws);                \
+                                            }                                  \
+                                        } while(false)
+#define ASSERT_THROWS(expression, ET) _THROWS(expression, ET, true)
+#define ASSERT_NOTHROW(expression, ET) _THROWS(expression, ET, false)
 
 using namespace cpparseopt;
 
@@ -38,6 +44,7 @@ size_t sizeOfArray(const T(&)[N]) {
 }
 // == end of: Utils
 
+
 void Test__PatternBuilder__SimpleArg() {
     Pattern pattern;
     PatternBuilder(pattern).arg("arg");
@@ -52,17 +59,48 @@ void Test__PatternBuilder__SimpleArg() {
     ASSERT(!argByPos.hasDefault());
 }
 
+void Test__PatternBuilder__AnonymousArg() {
+    Pattern pattern;
+    PatternBuilder(pattern).arg();
+    ASSERT(pattern.hasArg(0));
+    ASSERT(!pattern.hasArg(""));
+}
+
+void Test__PatternBuilder__NameFormats() {
+    Pattern pattern;
+    ASSERT_THROWS(PatternBuilder(pattern).arg(""), Exception);
+    ASSERT_THROWS(PatternBuilder(pattern).arg("arg name"), Exception);
+    ASSERT_THROWS(PatternBuilder(pattern).arg("-arg"), Exception);
+    ASSERT_THROWS(PatternBuilder(pattern).arg("--arg"), Exception);
+    ASSERT_NOTHROW(PatternBuilder(pattern).arg("arg"), Exception);
+
+    const char* badNames[] = {"", "p", "param", "param name",
+                              "-param", "--p", "---p", "---param"};
+    for (int i = 0; i < sizeOfArray(badNames); i++) {
+        ASSERT_THROWS(PatternBuilder(pattern).flag(badNames[i]), Exception);
+        ASSERT_THROWS(PatternBuilder(pattern).opt(badNames[i]), Exception);
+    }
+
+    const char* goodNames[] = {"-1", "-p", "-P", "--param",
+                               "--Param", "--PARAM"};
+    for (int i = 0; i < sizeOfArray(goodNames); i++) {
+        ASSERT_NOTHROW(PatternBuilder(pattern).flag(badNames[i]), Exception);
+        ASSERT_NOTHROW(PatternBuilder(pattern).opt(badNames[i]), Exception);
+    }
+}
+
 void TestSuite__PatternBuilder() {
     std::cout << "Test Suite: PatternBuilder" << std::endl;
 
     Test__PatternBuilder__SimpleArg();
+    Test__PatternBuilder__AnonymousArg();
+    Test__PatternBuilder__NameFormats();
 
     std::cout << std::endl;
 }
 
 
 void Test__Parser__SimpleArgs() {
-
     Pattern pattern;
     PatternBuilder(pattern).arg("arg0").arg().arg("arg2");
 
@@ -82,10 +120,15 @@ void Test__Parser__SimpleArgs() {
     ASSERT_THROWS(params.getArg(3), Exception);
 }
 
+void Test__Parser__SimpleFlags() {
+
+}
+
 void TestSuite__Parser() {
     std::cout << "Test Suite: Parser" << std::endl;
 
     Test__Parser__SimpleArgs();
+    Test__Parser__SimpleFlags();
 
     std::cout << std::endl;
 }
