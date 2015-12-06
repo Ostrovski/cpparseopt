@@ -150,11 +150,34 @@ void Test__Parser__SimpleFlags() {
     ASSERT_THROWS(params.hasFlag("--foobar"), UnknownParamException);
 }
 
+void Test__Parser__SimpleOptions() {
+    Pattern pattern;
+    PatternBuilder(pattern).opt("-o").opt("--opt").opt("--opt");
+
+/*
+    -a
+    123
+    --foo=bar
+    -d
+    abc edf
+    -F=123 456
+*/
+
+    const char *argv[] = {"/path/to/bin", "-o", "--foo"};
+    CmdLineParams params = pattern.match(static_cast<int>(sizeOfArray(argv)),
+                                         const_cast<char **>(argv));
+    ASSERT(params.hasFlag("-f"));
+    ASSERT(params.hasFlag("--foo"));
+    ASSERT(!params.hasFlag("--bar"));
+    ASSERT_THROWS(params.hasFlag("--foobar"), UnknownParamException);
+}
+
 void TestSuite__Parser() {
     std::cout << "Test Suite: Parser" << std::endl;
 
     Test__Parser__SimpleArgs();
     Test__Parser__SimpleFlags();
+    // Test__Parser__SimpleOptions();
 
     std::cout << std::endl;
 }

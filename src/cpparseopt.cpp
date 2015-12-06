@@ -35,13 +35,19 @@ const str_t &ParamGeneric::ensureName(const str_t &name) const {
     if (name.empty()) {
         _THROW(BadNameException, "Empty param name");
     }
+    const str_t allowedSymbols = "abcdefghigklmnopqrstuvwxyz"
+                                 "ABCDEFGHIGKLMNOPQRSTUVWXYZ"
+                                 "0123456789-_";
+    if (name.find_first_not_of(allowedSymbols) != str_t::npos) {
+        _THROW(BadNameException, "Bad param name [" + name + "]. "
+                                 "Forbidden symbols");
+    }
     return name;
 }
 
 
 ParamAliased::ParamAliased(const str_t &name)
         : ParamGeneric(ensureName(name)) {
-
 }
 
 void ParamAliased::addAlias(const str_t &alias) {
@@ -108,7 +114,7 @@ size_t Argument::getPos() const {
 }
 
 const str_t &Argument::ensureName(const str_t &name) const {
-    if (name.empty() || str_t::npos != name.find(' ') || name.find('-') == 0) {
+    if (name.find('-') == 0) {
         _THROW(BadNameException, "Bad argument name [" + name + "]");
     }
     return name;
