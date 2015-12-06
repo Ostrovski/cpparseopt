@@ -26,11 +26,11 @@
     
         std::cout << pattern.usage() << std::endl;
         
-        CmdLineParams parsed = pattern.match(argc, argv);
-        std::cout << parsed.getArg("arg1").asString() << std::endl;
-        std::cout << parsed.getArg(5).asDouble() << std::endl;
-        std::cout << parsed.getOpt("-b").asInt() << std::endl;
-        std::cout << parsed.hasFlag("--foo") << std::endl;
+        CmdLineParams params = pattern.match(argc, argv);
+        std::cout << params.getArg("arg1").asString() << std::endl;
+        std::cout << params.getArg(5).asDouble() << std::endl;
+        std::cout << params.getOpt("-b").asInt() << std::endl;
+        std::cout << params.hasFlag("--foo") << std::endl;
     }
     
 ### Version 0.0.1 (under construction)    

@@ -40,19 +40,34 @@ const str_t &ParamGeneric::ensureName(const str_t &name) const {
 
 
 ParamAliased::ParamAliased(const str_t &name)
-        : ParamGeneric(name) {
+        : ParamGeneric(ensureName(name)) {
 
 }
 
 void ParamAliased::addAlias(const str_t &alias) {
-    // TODO: check empty alias
     // TODO: check collision with other aliases
-    names_.push_back(alias);
+    names_.push_back(ensureName(alias));
 }
 
 const str_t &ParamAliased::ensureName(const str_t &name) const {
-    // TODO: ...
-    return name;
+    if (!(name.size() == 2 || name.size() >= 4)) {
+        _THROW_EXC("Bad flag/opt name [" + name + "]");
+    }
+    if ('-' != name[0]) {
+        _THROW_EXC("Bad param name [" + name + "]. Flag/opt name "
+                   "must start with one or two '-' symbols");
+    }
+    // Here and below name.size() >= 2
+    if (name.size() == 2) {
+        if ('-' != name[1]) {
+            return name;
+        }
+    } else {
+        if ('-' == name[1] && '-' != name[2]) {
+            return name;
+        }
+    }
+    _THROW_EXC("Bad param name [" + name + "]");
 }
 
 

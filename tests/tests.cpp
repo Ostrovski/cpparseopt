@@ -5,17 +5,30 @@
 
 #define ASSERT_EQ(e, a) assertEquals((e), (a), STOP_ON_ERR, __FILE__, __LINE__)
 #define ASSERT(v) ASSERT_EQ(true, (v))
-#define _THROWS(expression, ET, throws) do {                                   \
-                                            try {                              \
-                                                (expression); ASSERT(!throws); \
-                                            } catch(const ET &e) {             \
-                                                std::cout << e.what()          \
-                                                    << std::endl;              \
-                                                ASSERT(throws);                \
-                                            }                                  \
-                                        } while(false)
-#define ASSERT_THROWS(expression, ET) _THROWS(expression, ET, true)
-#define ASSERT_NOTHROW(expression, ET) _THROWS(expression, ET, false)
+
+#define _THROWS(expression, ET, throws, message)                               \
+    do {                                                                       \
+        try {                                                                  \
+            (expression);                                                      \
+            if (throws) {                                                      \
+                std::cout << "An exception was not thrown at "                 \
+                          << __FILE__ << ":" << __LINE__                       \
+                          << ". " << message << std::endl;                     \
+            }                                                                  \
+        } catch(const ET &e) {                                                 \
+            if (!throws) {                                                     \
+                std::cout << "Unexpected exception at "                        \
+                          << __FILE__ << ":" << __LINE__                       \
+                          << " [" << e.what() << "]"                           \
+                          << ". " << message << std::endl;                     \
+            }                                                                  \
+        }                                                                      \
+    } while(false)
+
+#define ASSERT_THROWS(expression, ET) _THROWS(expression, ET, 1, "")
+#define ASSERT_NOTHROW(expression, ET) _THROWS(expression, ET, 0, "")
+#define ASSERT_THROWS_EX(expression, ET, msg) _THROWS(expression, ET, 1, msg)
+#define ASSERT_NOTHROW_EX(expression, ET, msg) _THROWS(expression, ET, 0, msg)
 
 using namespace cpparseopt;
 
@@ -26,8 +39,8 @@ void assertEquals(const T &expected, const T &actual, bool stopOnFailure,
                   const char *file, size_t line) {
     bool ok = (expected == actual);
     if (!ok) {
-        std::cout << "Assertion failed: ['" <<
-                expected << "' != '" << actual << "']" << std::endl <<
+        std::cout << "Assertion failed: [" <<
+                expected << "] != [" << actual << "]" << std::endl <<
                 "    on " << file << ":" << line << std::endl;
         if (stopOnFailure) {
             exit(1);
@@ -77,15 +90,19 @@ void Test__PatternBuilder__NameFormats() {
     const char* badNames[] = {"", "p", "param", "param name",
                               "-param", "--p", "---p", "---param"};
     for (int i = 0; i < sizeOfArray(badNames); i++) {
-        ASSERT_THROWS(PatternBuilder(pattern).flag(badNames[i]), Exception);
-        ASSERT_THROWS(PatternBuilder(pattern).opt(badNames[i]), Exception);
+        ASSERT_THROWS_EX(PatternBuilder(pattern).flag(badNames[i]),
+                         Exception, badNames[i]);
+        ASSERT_THROWS_EX(PatternBuilder(pattern).opt(badNames[i]),
+                         Exception, badNames[i]);
     }
 
     const char* goodNames[] = {"-1", "-p", "-P", "--param",
                                "--Param", "--PARAM"};
     for (int i = 0; i < sizeOfArray(goodNames); i++) {
-        ASSERT_NOTHROW(PatternBuilder(pattern).flag(badNames[i]), Exception);
-        ASSERT_NOTHROW(PatternBuilder(pattern).opt(badNames[i]), Exception);
+        ASSERT_NOTHROW_EX(PatternBuilder(pattern).flag(goodNames[i]),
+                          Exception, goodNames[i]);
+        ASSERT_NOTHROW_EX(PatternBuilder(pattern).opt(goodNames[i]),
+                          Exception, goodNames[i]);
     }
 }
 
