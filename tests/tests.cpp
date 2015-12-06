@@ -141,7 +141,7 @@ void Test__Parser__SimpleFlags() {
     Pattern pattern;
     PatternBuilder(pattern).flag("-f").flag("--foo").flag("--bar");
 
-    const char *argv[] = {"/path/to/bin", "-f", "--flag"};
+    const char *argv[] = {"/path/to/bin", "-f", "--foo"};
     CmdLineParams params = pattern.match(static_cast<int>(sizeOfArray(argv)),
                                          const_cast<char **>(argv));
     ASSERT(params.hasFlag("-f"));
@@ -154,7 +154,7 @@ void TestSuite__Parser() {
     std::cout << "Test Suite: Parser" << std::endl;
 
     Test__Parser__SimpleArgs();
-    // Test__Parser__SimpleFlags();
+    Test__Parser__SimpleFlags();
 
     std::cout << std::endl;
 }

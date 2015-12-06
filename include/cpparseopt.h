@@ -32,6 +32,7 @@ namespace cpparseopt {
     public:
         ParamAliased(const str_t &name);
         void addAlias(const str_t &alias);
+        const str_t &getCanonicalName() const;
 
     private:
         const str_t &ensureName(const str_t &name) const;
@@ -87,11 +88,13 @@ namespace cpparseopt {
     class CmdLineParams;
     class PatternBuilder;
 
-    typedef std::vector<Argument> Arguments;
-    typedef std::vector<Flag> Flags;
-    typedef std::vector<Option> Options;
-
     class Pattern {
+    public:
+        typedef std::vector<Argument> Arguments;
+        typedef std::vector<Flag> Flags;
+        typedef std::vector<Option> Options;
+
+    private:
         // Pattern is immutable. Can be constructed only through PatternBuilder.
         friend class PatternBuilder;
 
@@ -250,13 +253,18 @@ namespace cpparseopt {
         struct ArgCmp {
             bool operator()(const Argument &lhs, const Argument &rhs) const;
         };
-
         typedef std::map<const Argument&, const ParsedArgParam, ArgCmp> ArgParams;
         typedef ArgParams::value_type ArgParamsItem;
 
+        struct FlagCmp {
+            bool operator()(const Flag &lhs, const Flag &rhs) const;
+        };
+        typedef std::map<const Flag&, bool, FlagCmp> FlagParams;
+        typedef FlagParams::value_type FlagParamsItem;
+
         const Pattern &pattern_;
         ArgParams arguments_;
-        // FlagParams flags_
+        FlagParams flags_;
         // OptParams options_
     public:
         CmdLineParams(const Pattern &pattern);
@@ -296,8 +304,8 @@ namespace cpparseopt {
         bool isOptParam(const char *param);
 
         void parseArg(const char *param);
-        void parseFlag();
-        void parseOpt();
+        void parseFlag(const char *param);
+        void parseOpt(const char *param);
 
         void reset(int argc, char **argv, CmdLineParams &dst);
     };

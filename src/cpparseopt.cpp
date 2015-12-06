@@ -49,6 +49,10 @@ void ParamAliased::addAlias(const str_t &alias) {
     names_.push_back(ensureName(alias));
 }
 
+const str_t &ParamAliased::getCanonicalName() const {
+    return names_.at(0);
+}
+
 const str_t &ParamAliased::ensureName(const str_t &name) const {
     if (!(name.size() == 2 || name.size() >= 4)) {
         _THROW(BadNameException, "Bad flag/opt name [" + name + "]");
@@ -148,50 +152,59 @@ bool Pattern::hasArg(size_t pos) const {
     return pos < arguments_.size();
 }
 
-class ArgNameMatcher
+template<typename Container>
+class NameMatcher
 {
     const str_t &name_;
 public:
-    static Arguments::const_iterator find(const Arguments &arguments,
-                                          const str_t &name) {
-        return std::find_if(arguments.begin(),
-                            arguments.end(),
-                            ArgNameMatcher(name));
+    static typename Container::const_iterator find(const Container &params,
+                                                   const str_t &name) {
+        return std::find_if(params.begin(),
+                            params.end(),
+                            NameMatcher(name));
     }
 
-    ArgNameMatcher(const str_t &name) : name_(name) {}
-    bool operator()(const Argument &arg) { return arg.hasName(name_); }
+    NameMatcher(const str_t &name) : name_(name) {}
+    bool operator()(const typename Container::value_type &param) {
+        return param.hasName(name_);
+    }
 };
 
 const Argument &Pattern::getArg(const str_t &name) const {
-    Arguments::const_iterator it = ArgNameMatcher::find(arguments_, name);
+    Arguments::const_iterator it = NameMatcher<Arguments>::find(arguments_, name);
     if (it == arguments_.end()) {
-        _THROW(UnknownParamException, "No argument with name [" + name + "]");
+        _THROW(UnknownParamException, "No arguments with name [" + name + "]");
     }
     return *it;
 }
 
 bool Pattern::hasArg(const str_t &name) const {
-    return ArgNameMatcher::find(arguments_, name) != arguments_.end();
+    return NameMatcher<Arguments>::find(arguments_, name) != arguments_.end();
 }
 
 const Option &Pattern::getOpt(const str_t &name) const {
-    // TODO: implement me!
-    return options_.back();
+    Options::const_iterator it = NameMatcher<Options>::find(options_, name);
+    if (it == options_.end()) {
+        _THROW(UnknownParamException, "No options with name [" + name + "]");
+    }
+    return *it;
 }
 
 
 bool Pattern::hasOpt(const str_t &name) const {
-    return false;
+    return NameMatcher<Options>::find(options_, name) != options_.end();
 }
 
 const Flag &Pattern::getFlag(const str_t &name) const {
-    // TODO: implement me!
-    return flags_.back();
+    Flags::const_iterator it = NameMatcher<Flags>::find(flags_, name);
+    if (it == flags_.end()) {
+        _THROW(UnknownParamException, "No flags with name [" + name + "]");
+    }
+    return *it;
 }
 
 bool Pattern::hasFlag(const str_t &name) const {
-    return false;
+    return NameMatcher<Flags>::find(flags_, name) != flags_.end();
 }
 
 str_t Pattern::usage() const {
@@ -399,18 +412,22 @@ bool CmdLineParams::ArgCmp::operator()(const Argument &lhs,
     return lhs.getPos() < rhs.getPos();
 }
 
+bool CmdLineParams::FlagCmp::operator()(const Flag &lhs,
+                                        const Flag &rhs) const {
+    return lhs.getCanonicalName() < rhs.getCanonicalName();
+}
+
 const ParsedParam &CmdLineParams::getArg(const str_t &name) const {
     const Argument &arg = getPattern().getArg(name);
     return arguments_.find(arg)->second;
 }
 
 const ParsedParam &CmdLineParams::getArg(size_t pos) const {
-    const Argument &arg = getPattern().getArg(pos);
-    return arguments_.find(arg)->second;
+    return arguments_.find(getPattern().getArg(pos))->second;
 }
 
 bool CmdLineParams::hasFlag(const str_t &name) const {
-    return false;
+    return flags_.find(getPattern().getFlag(name)) != flags_.end();
 }
 
 const Pattern &CmdLineParams::getPattern() const {
@@ -431,12 +448,12 @@ void CmdLineParamsParser::parse(int argc, char **argv, CmdLineParams &dst) {
     while (hasNextParam()) {
         const char *param = nextParam();
         if (isFlagParam(param)) {
-            parseFlag();
+            parseFlag(param);
             continue;
         }
 
         if (isOptParam(param)) {
-            parseOpt();
+            parseOpt(param);
             continue;
         }
 
@@ -479,11 +496,12 @@ void CmdLineParamsParser::parseArg(const char *param) {
     );
 }
 
-void CmdLineParamsParser::parseFlag() {
-    // TODO: this.flags.set(currentParam)
+void CmdLineParamsParser::parseFlag(const char *param) {
+    const Flag &flag = params_->getPattern().getFlag(param);
+    params_->flags_.insert(CmdLineParams::FlagParamsItem(flag, true));
 }
 
-void CmdLineParamsParser::parseOpt() {
+void CmdLineParamsParser::parseOpt(const char *param) {
 
 }
 
