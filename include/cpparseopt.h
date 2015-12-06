@@ -261,7 +261,7 @@ namespace cpparseopt {
         const ParsedParam &getArg(const str_t &name) const;
         const ParsedParam &getArg(size_t pos) const;
         //const ParsedParam &getOpt(const str_t &name) const;
-        //bool                    hasFlag(const str_t &name) const;
+        bool hasFlag(const str_t &name) const;
         const Pattern &getPattern() const;
     };
 
@@ -304,6 +304,21 @@ namespace cpparseopt {
         Exception(const std::string &msg, const char *file, size_t line);
         std::string makeMsg(const std::string &msg, const char *file,
                             size_t line);
+    };
+
+    class BadNameException : public Exception {
+
+    public:
+        BadNameException(const std::string &msg);
+        BadNameException(const std::string &msg,
+                         const char *file, size_t line);
+    };
+
+    class UnknownParamException : public Exception {
+    public:
+        UnknownParamException(const std::string &msg);
+        UnknownParamException(const std::string &msg,
+                              const char *file, size_t line);
     };
 }
 

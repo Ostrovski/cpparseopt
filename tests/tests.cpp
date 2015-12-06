@@ -33,7 +33,7 @@
 using namespace cpparseopt;
 
 
-// == begin: Utils
+// =============================== begin: Utils ===============================+
 template<typename T>
 void assertEquals(const T &expected, const T &actual, bool stopOnFailure,
                   const char *file, size_t line) {
@@ -55,7 +55,7 @@ inline
 size_t sizeOfArray(const T(&)[N]) {
     return N;
 }
-// == end of: Utils
+// =============================== end of: Utils ===============================
 
 
 void Test__PatternBuilder__SimpleArg() {
@@ -81,28 +81,28 @@ void Test__PatternBuilder__AnonymousArg() {
 
 void Test__PatternBuilder__NameFormats() {
     Pattern pattern;
-    ASSERT_THROWS(PatternBuilder(pattern).arg(""), Exception);
-    ASSERT_THROWS(PatternBuilder(pattern).arg("arg name"), Exception);
-    ASSERT_THROWS(PatternBuilder(pattern).arg("-arg"), Exception);
-    ASSERT_THROWS(PatternBuilder(pattern).arg("--arg"), Exception);
-    ASSERT_NOTHROW(PatternBuilder(pattern).arg("arg"), Exception);
+    ASSERT_THROWS(PatternBuilder(pattern).arg(""), BadNameException);
+    ASSERT_THROWS(PatternBuilder(pattern).arg("arg name"), BadNameException);
+    ASSERT_THROWS(PatternBuilder(pattern).arg("-arg"), BadNameException);
+    ASSERT_THROWS(PatternBuilder(pattern).arg("--arg"), BadNameException);
+    ASSERT_NOTHROW(PatternBuilder(pattern).arg("arg"), BadNameException);
 
     const char* badNames[] = {"", "p", "param", "param name",
                               "-param", "--p", "---p", "---param"};
     for (int i = 0; i < sizeOfArray(badNames); i++) {
         ASSERT_THROWS_EX(PatternBuilder(pattern).flag(badNames[i]),
-                         Exception, badNames[i]);
+                         BadNameException, badNames[i]);
         ASSERT_THROWS_EX(PatternBuilder(pattern).opt(badNames[i]),
-                         Exception, badNames[i]);
+                         BadNameException, badNames[i]);
     }
 
     const char* goodNames[] = {"-1", "-p", "-P", "--param",
                                "--Param", "--PARAM"};
     for (int i = 0; i < sizeOfArray(goodNames); i++) {
         ASSERT_NOTHROW_EX(PatternBuilder(pattern).flag(goodNames[i]),
-                          Exception, goodNames[i]);
+                          BadNameException, goodNames[i]);
         ASSERT_NOTHROW_EX(PatternBuilder(pattern).opt(goodNames[i]),
-                          Exception, goodNames[i]);
+                          BadNameException, goodNames[i]);
     }
 }
 
@@ -129,23 +129,32 @@ void Test__Parser__SimpleArgs() {
     ASSERT_EQ(str_t("param0"), str_t(params.getArg("arg0")));
 
     ASSERT_EQ(str_t("param1"), str_t(params.getArg(1)));
-    ASSERT_THROWS(params.getArg("arg1"), Exception);
+    ASSERT_THROWS(params.getArg("arg1"), UnknownParamException);
 
     ASSERT_EQ(str_t("param2"), str_t(params.getArg(2)));
     ASSERT_EQ(str_t("param2"), str_t(params.getArg("arg2")));
 
-    ASSERT_THROWS(params.getArg(3), Exception);
+    ASSERT_THROWS(params.getArg(3), UnknownParamException);
 }
 
 void Test__Parser__SimpleFlags() {
+    Pattern pattern;
+    PatternBuilder(pattern).flag("-f").flag("--foo").flag("--bar");
 
+    const char *argv[] = {"/path/to/bin", "-f", "--flag"};
+    CmdLineParams params = pattern.match(static_cast<int>(sizeOfArray(argv)),
+                                         const_cast<char **>(argv));
+    ASSERT(params.hasFlag("-f"));
+    ASSERT(params.hasFlag("--foo"));
+    ASSERT(!params.hasFlag("--bar"));
+    ASSERT_THROWS(params.hasFlag("--foobar"), UnknownParamException);
 }
 
 void TestSuite__Parser() {
     std::cout << "Test Suite: Parser" << std::endl;
 
     Test__Parser__SimpleArgs();
-    Test__Parser__SimpleFlags();
+    // Test__Parser__SimpleFlags();
 
     std::cout << std::endl;
 }

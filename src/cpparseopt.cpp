@@ -3,9 +3,9 @@
 #include <cassert>
 
 #ifdef _DEBUG
-#define _THROW_EXC(msg) throw Exception((msg), __FILE__, __LINE__)
+#define _THROW(ET, msg) throw ET((msg), __FILE__, __LINE__)
 #else
-#define _THROW_EXC(msg) throw Exception((msg))
+#define _THROW(ET, msg) throw ET((msg))
 #endif
 
 using namespace cpparseopt;
@@ -33,7 +33,7 @@ void ParamGeneric::setDescr(const str_t &descr) {
 
 const str_t &ParamGeneric::ensureName(const str_t &name) const {
     if (name.empty()) {
-        _THROW_EXC("Empty param name");
+        _THROW(BadNameException, "Empty param name");
     }
     return name;
 }
@@ -51,11 +51,11 @@ void ParamAliased::addAlias(const str_t &alias) {
 
 const str_t &ParamAliased::ensureName(const str_t &name) const {
     if (!(name.size() == 2 || name.size() >= 4)) {
-        _THROW_EXC("Bad flag/opt name [" + name + "]");
+        _THROW(BadNameException, "Bad flag/opt name [" + name + "]");
     }
     if ('-' != name[0]) {
-        _THROW_EXC("Bad param name [" + name + "]. Flag/opt name "
-                   "must start with one or two '-' symbols");
+        _THROW(BadNameException, "Bad param name [" + name + "]. Flag/opt name "
+                                 "must start with one or two '-' symbols");
     }
     // Here and below name.size() >= 2
     if (name.size() == 2) {
@@ -67,7 +67,7 @@ const str_t &ParamAliased::ensureName(const str_t &name) const {
             return name;
         }
     }
-    _THROW_EXC("Bad param name [" + name + "]");
+    _THROW(BadNameException, "Bad param name [" + name + "]");
 }
 
 
@@ -105,7 +105,7 @@ size_t Argument::getPos() const {
 
 const str_t &Argument::ensureName(const str_t &name) const {
     if (name.empty() || str_t::npos != name.find(' ') || name.find('-') == 0) {
-        _THROW_EXC("Bad argument name [" + name + "]");
+        _THROW(BadNameException, "Bad argument name [" + name + "]");
     }
     return name;
 }
@@ -129,7 +129,7 @@ CmdLineParams Pattern::match(int argc, char **argv) const {
 
 void Pattern::match(int argc, char **argv, CmdLineParams &dst) const {
     if (&dst.getPattern() != this) {
-        throw 1; // TODO: ...
+        _THROW(Exception, "Different patterns");
     }
     CmdLineParamsParser parser;
     parser.parse(argc, argv, dst);
@@ -388,7 +388,7 @@ const ParsedParam &CmdLineParams::getArg(const str_t &name) const {
             return *it;
         }
     }
-    _THROW_EXC("No argument with name [" + name + "]");
+    _THROW(UnknownParamException, "No argument with name [" + name + "]");
 }
 
 const ParsedParam &CmdLineParams::getArg(size_t pos) const {
@@ -397,7 +397,12 @@ const ParsedParam &CmdLineParams::getArg(size_t pos) const {
             return *it;
         }
     }
-    _THROW_EXC("No argument at position [" + std::to_string(pos) + "]");
+    _THROW(UnknownParamException, "No argument at position "
+                                  "[" + std::to_string(pos) + "]");
+}
+
+bool CmdLineParams::hasFlag(const str_t &name) const {
+    return false;
 }
 
 const Pattern &CmdLineParams::getPattern() const {
@@ -459,12 +464,9 @@ bool CmdLineParamsParser::isOptParam(const char *param) {
 }
 
 void CmdLineParamsParser::parseArg(const char *param) {
-    if (!params_->getPattern().hasArg(params_->arguments_.size())) {
-        throw 1;  // TODO: ...
-    }
-    // TODO: beautify!
-    params_->arguments_.push_back(ParsedArgParam(params_->getPattern().getArg(params_->arguments_.size()),
-                                                 param));
+    size_t currentPos = params_->arguments_.size();
+    const Argument &arg = params_->getPattern().getArg(currentPos);
+    params_->arguments_.push_back(ParsedArgParam(arg, param));
 }
 
 void CmdLineParamsParser::parseFlag() {
@@ -494,4 +496,24 @@ Exception::Exception(const std::string &msg, const char *file, size_t line)
 std::string Exception::makeMsg(const std::string &msg, const char *file,
                            size_t line) {
     return msg + "\n    " + file + ":" + std::to_string(line);
+}
+
+
+BadNameException::BadNameException(const std::string &msg)
+        : Exception(msg) {
+}
+
+BadNameException::BadNameException(const std::string &msg, const char *file,
+                                   size_t line)
+        : Exception(msg, file, line) {
+}
+
+
+UnknownParamException::UnknownParamException(const std::string &msg)
+        : Exception(msg) {
+}
+
+UnknownParamException::UnknownParamException(const std::string &msg,
+                                             const char *file, size_t line)
+        : Exception(msg, file, line) {
 }
