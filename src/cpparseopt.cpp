@@ -136,31 +136,43 @@ void Pattern::match(int argc, char **argv, CmdLineParams &dst) const {
 }
 
 const Argument &Pattern::getArg(size_t pos) const {
+    if (pos >= arguments_.size()) {
+        _THROW(UnknownParamException, "No argument at position "
+                                      "[" + std::to_string(pos) + "]");
+    }
     // TODO: try ... catch
     return arguments_.at(pos);
 }
 
-class ArgPosMatcher
-{
-    size_t pos_;
-public:
-    ArgPosMatcher(size_t pos) : pos_(pos) {}
-    bool operator()(const Argument &arg) { return pos_ == arg.getPos(); }
-};
-
 bool Pattern::hasArg(size_t pos) const {
-    return std::find_if(arguments_.begin(),
-                        arguments_.end(),
-                        ArgPosMatcher(pos)) != arguments_.end();
+    return pos < arguments_.size();
 }
 
+class ArgNameMatcher
+{
+    const str_t &name_;
+public:
+    static Arguments::const_iterator find(const Arguments &arguments,
+                                          const str_t &name) {
+        return std::find_if(arguments.begin(),
+                            arguments.end(),
+                            ArgNameMatcher(name));
+    }
+
+    ArgNameMatcher(const str_t &name) : name_(name) {}
+    bool operator()(const Argument &arg) { return arg.hasName(name_); }
+};
+
 const Argument &Pattern::getArg(const str_t &name) const {
-    // TODO: implement me!
-    return arguments_.back();
+    Arguments::const_iterator it = ArgNameMatcher::find(arguments_, name);
+    if (it == arguments_.end()) {
+        _THROW(UnknownParamException, "No argument with name [" + name + "]");
+    }
+    return *it;
 }
 
 bool Pattern::hasArg(const str_t &name) const {
-    return false;
+    return ArgNameMatcher::find(arguments_, name) != arguments_.end();
 }
 
 const Option &Pattern::getOpt(const str_t &name) const {
@@ -382,23 +394,19 @@ CmdLineParams::CmdLineParams(const Pattern &pattern)
         : pattern_(pattern) {
 }
 
+bool CmdLineParams::ArgCmp::operator()(const Argument &lhs,
+                                       const Argument &rhs) const {
+    return lhs.getPos() < rhs.getPos();
+}
+
 const ParsedParam &CmdLineParams::getArg(const str_t &name) const {
-    for (ArgParamsIter it = arguments_.begin(); it != arguments_.end(); ++it) {
-        if ((*it).getArg().hasName(name)) {
-            return *it;
-        }
-    }
-    _THROW(UnknownParamException, "No argument with name [" + name + "]");
+    const Argument &arg = getPattern().getArg(name);
+    return arguments_.find(arg)->second;
 }
 
 const ParsedParam &CmdLineParams::getArg(size_t pos) const {
-    for (ArgParamsIter it = arguments_.begin(); it != arguments_.end(); ++it) {
-        if ((*it).getArg().getPos() == pos) {
-            return *it;
-        }
-    }
-    _THROW(UnknownParamException, "No argument at position "
-                                  "[" + std::to_string(pos) + "]");
+    const Argument &arg = getPattern().getArg(pos);
+    return arguments_.find(arg)->second;
 }
 
 bool CmdLineParams::hasFlag(const str_t &name) const {
@@ -456,17 +464,19 @@ const char *CmdLineParamsParser::nextParam() {
 }
 
 bool CmdLineParamsParser::isFlagParam(const char *param) {
-    return false; // TODO: params_->getPattern().hasFlag(currentParam());
+    return params_->getPattern().hasFlag(param);
 }
 
 bool CmdLineParamsParser::isOptParam(const char *param) {
-    return false; // TODO: params_->getPattern().hasOpt(currentParam());
+    return params_->getPattern().hasOpt(param);
 }
 
 void CmdLineParamsParser::parseArg(const char *param) {
     size_t currentPos = params_->arguments_.size();
     const Argument &arg = params_->getPattern().getArg(currentPos);
-    params_->arguments_.push_back(ParsedArgParam(arg, param));
+    params_->arguments_.insert(
+            CmdLineParams::ArgParamsItem(arg, ParsedArgParam(arg, param))
+    );
 }
 
 void CmdLineParamsParser::parseFlag() {

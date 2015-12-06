@@ -1,6 +1,7 @@
 #ifndef CPPARSEOPT_CPPARSEOPT_H
 #define CPPARSEOPT_CPPARSEOPT_H
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -86,13 +87,13 @@ namespace cpparseopt {
     class CmdLineParams;
     class PatternBuilder;
 
+    typedef std::vector<Argument> Arguments;
+    typedef std::vector<Flag> Flags;
+    typedef std::vector<Option> Options;
+
     class Pattern {
         // Pattern is immutable. Can be constructed only through PatternBuilder.
         friend class PatternBuilder;
-
-        typedef std::vector<Argument> Arguments;
-        typedef std::vector<Flag> Flags;
-        typedef std::vector<Option> Options;
 
         Arguments arguments_;
         Flags     flags_;
@@ -246,8 +247,12 @@ namespace cpparseopt {
     class CmdLineParams {
         friend class CmdLineParamsParser;
 
-        typedef std::vector<ParsedArgParam> ArgParams;
-        typedef std::vector<ParsedArgParam>::const_iterator ArgParamsIter;
+        struct ArgCmp {
+            bool operator()(const Argument &lhs, const Argument &rhs) const;
+        };
+
+        typedef std::map<const Argument&, const ParsedArgParam, ArgCmp> ArgParams;
+        typedef ArgParams::value_type ArgParamsItem;
 
         const Pattern &pattern_;
         ArgParams arguments_;
