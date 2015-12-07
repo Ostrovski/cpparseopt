@@ -37,3 +37,4 @@
     
 ### TODOs
  - Consider removing Pattern.has(Arg|Opt|Flag) 
+ - Consider making ParsedParam as template class.

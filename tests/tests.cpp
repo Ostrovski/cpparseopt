@@ -151,25 +151,35 @@ void Test__Parser__SimpleFlags() {
 }
 
 void Test__Parser__SimpleOptions() {
+    /**************************************************************************+
+     *                             OPTION
+     *                            /      \
+     *                           /        \
+     *                          /          \
+     *                         /       Without default
+     *                        /                \
+     *                       /                  \
+     *                 Has default               \
+     *                  /      \              -o some_val
+     *                 /        \             -o "some spaced val"
+     *                /          \            -o=some_val
+     *               /            \           -o="some spaced val"
+     *          -o, --opt        -o=some_val
+     *        (default used)     -o="some spaced val"
+     *                             (default overridden)
+     **************************************************************************/
+
     Pattern pattern;
-    PatternBuilder(pattern).opt("-o").opt("--opt").opt("--opt");
+    PatternBuilder(pattern).opt("-o").opt("--opt").opt("-O").opt("--Opt");
 
-/*
-    -a
-    123
-    --foo=bar
-    -d
-    abc edf
-    -F=123 456
-*/
-
-    const char *argv[] = {"/path/to/bin", "-o", "--foo"};
+    const char *argv[] = {"/path/to/bin",
+                          "-o", "123",
+                          "--opt 123 456",
+                          "-O=123",
+                          "--Opt=123 456"};
     CmdLineParams params = pattern.match(static_cast<int>(sizeOfArray(argv)),
                                          const_cast<char **>(argv));
-    ASSERT(params.hasFlag("-f"));
-    ASSERT(params.hasFlag("--foo"));
-    ASSERT(!params.hasFlag("--bar"));
-    ASSERT_THROWS(params.hasFlag("--foobar"), UnknownParamException);
+    ASSERT(false);
 }
 
 void TestSuite__Parser() {
@@ -177,7 +187,7 @@ void TestSuite__Parser() {
 
     Test__Parser__SimpleArgs();
     Test__Parser__SimpleFlags();
-    // Test__Parser__SimpleOptions();
+    //Test__Parser__SimpleOptions();
 
     std::cout << std::endl;
 }

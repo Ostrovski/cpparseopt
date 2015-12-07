@@ -245,6 +245,7 @@ namespace cpparseopt {
         const Argument &getArg() const;
     };
 
+
     class CmdLineParamsParser;
 
     class CmdLineParams {
@@ -273,7 +274,7 @@ namespace cpparseopt {
 // парсинга.
         const ParsedParam &getArg(const str_t &name) const;
         const ParsedParam &getArg(size_t pos) const;
-        //const ParsedParam &getOpt(const str_t &name) const;
+        const ParsedParam &getOpt(const str_t &name) const;
         bool hasFlag(const str_t &name) const;
         const Pattern &getPattern() const;
     };
