@@ -487,11 +487,11 @@ const char *CmdLineParamsParser::nextParam() {
 }
 
 bool CmdLineParamsParser::isFlagParam(const char *param) {
-    return params_->getPattern().hasFlag(param);
+    return '-' == param[0] && params_->getPattern().hasFlag(param);
 }
 
 bool CmdLineParamsParser::isOptParam(const char *param) {
-    return params_->getPattern().hasOpt(param);
+    return '-' == param[0] && params_->getPattern().hasOpt(param);
 }
 
 void CmdLineParamsParser::parseArg(const char *param) {
